@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "CEO",
+    "slug": "ceo-assistant",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#050510"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "CEO needs microphone access for voice commands."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#050510"
+      },
+      "permissions": ["RECORD_AUDIO"]
+    },
+    "plugins": ["expo-av"]
+  }
+}

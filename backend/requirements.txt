@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+websockets
+python-multipart
+google-genai
+faster-whisper
+edge-tts
+PyGithub
+python-dotenv
+pydantic-settings
+aiofiles
+httpx
