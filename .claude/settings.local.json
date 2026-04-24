@@ -5,7 +5,11 @@
       "Bash(git fetch *)",
       "Bash(git check-ignore *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(rm -rf node_modules package-lock.json)",
+      "Bash(npm install *)",
+      "Bash(npx expo *)"
     ]
   }
 }
