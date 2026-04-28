@@ -19,7 +19,10 @@ voice = VoiceService()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    log.info(f"CEO is online using {llm.provider_name}.")
+    if llm.provider_model:
+        log.info("CEO is online using %s (%s).", llm.provider_name, llm.provider_model)
+    else:
+        log.info("CEO is online using %s.", llm.provider_name)
     yield
     log.info("CEO shutting down.")
 
@@ -93,6 +96,9 @@ async def ws_endpoint(websocket: WebSocket):
             log.info(f"User: {user_text}")
             response_text = await llm.send(user_text)
             log.info(f"CEO: {response_text[:120]}")
+            telemetry = llm.last_telemetry()
+            if telemetry:
+                log.info("LLM telemetry: %s", json.dumps(telemetry, sort_keys=True))
 
             response_audio = await voice.synthesize(response_text)
             await manager.send(websocket, {
@@ -110,7 +116,12 @@ async def ws_endpoint(websocket: WebSocket):
 
 @app.get("/health")
 async def health():
-    return {"status": "online", "connections": len(manager.connections), "llm_provider": llm.provider_name}
+    return {
+        "status": "online",
+        "connections": len(manager.connections),
+        "llm_provider": llm.provider_name,
+        "llm_model": llm.provider_model,
+    }
 
 
 @app.post("/transcribe")

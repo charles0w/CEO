@@ -77,6 +77,7 @@ output/benchmarks/
 Each run generates:
 
 - a JSON file with the raw responses and heuristic check results
+- provider telemetry in the JSON when the backend exposes it
 - a Markdown summary table for quick review
 
 ## Recommended workflow

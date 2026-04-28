@@ -95,3 +95,33 @@ Changes made after that observation:
 Validation for this iteration:
 - `python3 -m py_compile backend/benchmarks/*.py`
 - `cd backend && python3 -m benchmarks.run_llm_bench --provider mock --profile quick --output-dir /tmp/ceo-bench-quick`
+
+## Iteration 3: provider telemetry and runtime visibility
+
+The next bottleneck after the first benchmark pass was observability.
+Average latency alone was not enough to compare local-model behavior with any confidence.
+
+Changes made in this iteration:
+- added a shared `ProviderTelemetry` structure in `backend/services/llm_provider.py`
+- `GeminiService` now records per-request duration, response size, token counts when available, and finish reason
+- `OllamaService` now records per-request duration, response size, tool-call count, tool names, tool-loop rounds, and Ollama eval/load timing fields when returned by the API
+- `main.py` now logs per-request LLM telemetry and exposes both `llm_provider` and `llm_model` on `/health`
+- `backend/benchmarks/run_llm_bench.py` now stores `provider_telemetry` alongside each benchmark result
+- `backend/benchmarks/README.md` and the root `README.md` were updated to mention the new visibility
+
+Why this matters:
+- benchmark comparisons now preserve provider-native metadata instead of only outer-wall-clock timing
+- live backend runs can confirm which provider and model actually answered each request
+- Ollama tool-loop behavior is now measurable instead of inferred from raw text alone
+
+Validation for this iteration:
+- `python3 -m py_compile backend/main.py`
+- `python3 -m py_compile backend/config.py`
+- `python3 -m py_compile backend/services/*.py`
+- `python3 -m py_compile backend/benchmarks/*.py`
+- `cd backend && python3 -m benchmarks.run_llm_bench --provider mock --profile quick --output-dir /tmp/ceo-bench-telemetry-2`
+
+Observed validation result:
+- the mock benchmark completed successfully
+- the JSON output now includes `provider_telemetry` per case
+- the telemetry payload at minimum includes provider, model, and response size, with richer fields available for real providers

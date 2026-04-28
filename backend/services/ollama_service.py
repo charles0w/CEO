@@ -1,9 +1,10 @@
 from typing import Any
+import time
 
 import httpx
 
 from config import settings
-from services.llm_provider import BaseLLMProvider
+from services.llm_provider import BaseLLMProvider, ProviderTelemetry
 from services.llm_tools import OLLAMA_TOOLS, build_system_prompt, invoke_tool
 
 
@@ -18,6 +19,7 @@ class OllamaService(BaseLLMProvider):
         max_tool_rounds: int | None = None,
         timeout: float | None = None,
     ):
+        super().__init__()
         self.base_url = (base_url or settings.ollama_base_url).rstrip("/")
         self.model = model or settings.ollama_model
         self.think = settings.ollama_think if think is None else think
@@ -54,27 +56,75 @@ class OllamaService(BaseLLMProvider):
             normalized["images"] = message["images"]
         return normalized
 
+    def _record_response_telemetry(
+        self,
+        *,
+        text: str,
+        duration_ms: float,
+        payload: dict[str, Any] | None = None,
+        tool_names: list[str] | None = None,
+        rounds: int = 0,
+        error: str | None = None,
+    ) -> None:
+        payload = payload or {}
+        self._record_telemetry(
+            ProviderTelemetry(
+                provider=self.name,
+                model=self.model,
+                duration_ms=duration_ms,
+                response_chars=len(text),
+                response_words=len(text.split()),
+                tool_call_count=len(tool_names or []),
+                tool_names=tool_names or [],
+                rounds=rounds,
+                finish_reason=payload.get("done_reason"),
+                prompt_eval_count=payload.get("prompt_eval_count"),
+                eval_count=payload.get("eval_count"),
+                total_duration_ns=payload.get("total_duration"),
+                load_duration_ns=payload.get("load_duration"),
+                prompt_eval_duration_ns=payload.get("prompt_eval_duration"),
+                eval_duration_ns=payload.get("eval_duration"),
+                error=error,
+            )
+        )
+
     async def send(self, message: str) -> str:
         self.messages.append({"role": "user", "content": message})
+        started = time.perf_counter()
+        rounds = 0
+        tool_names: list[str] = []
+        last_payload: dict[str, Any] | None = None
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 for _ in range(self.max_tool_rounds):
+                    rounds += 1
                     response = await client.post(f"{self.base_url}/chat", json=self._chat_payload())
                     response.raise_for_status()
                     payload = response.json()
+                    last_payload = payload
 
                     assistant_message = self._normalize_assistant_message(payload.get("message") or {})
                     self.messages.append(assistant_message)
 
                     tool_calls = assistant_message.get("tool_calls") or []
                     if not tool_calls:
-                        return assistant_message.get("content") or "[No response]"
+                        text = assistant_message.get("content") or "[No response]"
+                        self._record_response_telemetry(
+                            text=text,
+                            duration_ms=round((time.perf_counter() - started) * 1000, 1),
+                            payload=last_payload,
+                            tool_names=tool_names,
+                            rounds=rounds,
+                        )
+                        return text
 
                     for tool_call in tool_calls:
                         function = tool_call.get("function", {})
                         tool_name = function.get("name", "")
                         arguments = function.get("arguments")
+                        if tool_name:
+                            tool_names.append(tool_name)
                         result = invoke_tool(tool_name, arguments)
                         self.messages.append(
                             {
@@ -84,12 +134,40 @@ class OllamaService(BaseLLMProvider):
                             }
                         )
 
-            return "CEO Error: Ollama tool loop exceeded the configured limit."
+            error_text = "CEO Error: Ollama tool loop exceeded the configured limit."
+            self._record_response_telemetry(
+                text=error_text,
+                duration_ms=round((time.perf_counter() - started) * 1000, 1),
+                payload=last_payload,
+                tool_names=tool_names,
+                rounds=rounds,
+                error=error_text,
+            )
+            return error_text
         except httpx.HTTPError as exc:
-            return f"CEO Error: Ollama request failed: {exc}"
+            error_text = f"CEO Error: Ollama request failed: {exc}"
+            self._record_response_telemetry(
+                text=error_text,
+                duration_ms=round((time.perf_counter() - started) * 1000, 1),
+                payload=last_payload,
+                tool_names=tool_names,
+                rounds=rounds,
+                error=str(exc),
+            )
+            return error_text
         except Exception as exc:  # pragma: no cover - defensive runtime guard
-            return f"CEO Error: {exc}"
+            error_text = f"CEO Error: {exc}"
+            self._record_response_telemetry(
+                text=error_text,
+                duration_ms=round((time.perf_counter() - started) * 1000, 1),
+                payload=last_payload,
+                tool_names=tool_names,
+                rounds=rounds,
+                error=str(exc),
+            )
+            return error_text
 
     def reset(self) -> str:
+        self._clear_telemetry()
         self._reset_messages()
         return "Conversation cleared. Ready for your next command, Boss."

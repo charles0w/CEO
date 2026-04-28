@@ -113,6 +113,8 @@ python -m benchmarks.run_llm_bench --targets-file benchmarks/targets.research-sh
 
 Results are written under `output/benchmarks/`. See `backend/benchmarks/README.md` for details.
 
+When the backend is running, `/health` now reports both `llm_provider` and `llm_model`, and the server logs per-request LLM telemetry for latency and response size.
+
 ---
 
 ## Architecture

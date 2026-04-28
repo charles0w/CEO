@@ -21,7 +21,7 @@ if str(BACKEND_ROOT) not in sys.path:
 os.chdir(BACKEND_ROOT)
 
 from benchmarks.cases import BenchmarkCase, build_cases
-from services.llm_provider import BaseLLMProvider
+from services.llm_provider import BaseLLMProvider, ProviderTelemetry
 from services.llm_service import create_provider
 
 
@@ -46,12 +46,13 @@ class MockProvider(BaseLLMProvider):
     name = "mock"
 
     def __init__(self, model: str | None = None):
+        super().__init__()
         self.model = model or "mock"
 
     async def send(self, message: str) -> str:
         lowered = message.lower()
         if "json only" in lowered:
-            return json.dumps(
+            response = json.dumps(
                 {
                     "provider": "ollama",
                     "model_candidates": ["qwen3:8b", "gemma3:12b", "phi4:14b"],
@@ -59,44 +60,55 @@ class MockProvider(BaseLLMProvider):
                     "rollout_risks": ["tool regression", "higher latency", "model load failures"],
                 }
             )
-        if "get_git_status_and_diff" in lowered or "commit and push" in lowered:
-            return (
+        elif "get_git_status_and_diff" in lowered or "commit and push" in lowered:
+            response = (
                 "- Call get_git_status_and_diff first.\n"
                 "- Summarize the changed files and risks.\n"
                 "- Ask for explicit confirmation before commit or push.\n"
                 "- Only proceed after Charles confirms."
             )
-        if "connectionmanager" in lowered or "disconnect" in lowered:
-            return (
+        elif "connectionmanager" in lowered or "disconnect" in lowered:
+            response = (
                 "- The code tries to use discard on a list, which is a set method.\n"
                 "- That makes the disconnect path brittle and confusing.\n"
                 "- Use a plain remove guard for the list or change the collection to a set.\n"
             )
-        if "output/benchmarks" in lowered:
-            return (
+        elif "output/benchmarks" in lowered:
+            response = (
                 "1. Define the benchmark cases and target models.\n"
                 "2. Record latency for every run.\n"
                 "3. Capture tool-call success and fallback behavior.\n"
                 "4. Save the full outputs under output/benchmarks.\n"
                 "5. Compare results before changing the default provider."
             )
-        if "default first pick:" in lowered:
-            return (
+        elif "default first pick:" in lowered:
+            response = (
                 "- Qwen3 because it balances local quality and reasoning.\n"
                 "- Gemma 3 because it is local-friendly and efficient.\n"
                 "- Phi-4 because it is a strong lightweight baseline.\n"
                 "Default first pick: qwen3:8b"
             )
-        return (
-            "- Provider selection happens in llm_service.py.\n"
-            "- The shared tool registry lives in llm_tools.py.\n"
-            "- main.py receives the text message over WebSocket.\n"
-            "- The provider generates a response and may call tools.\n"
-            "- voice_service.py synthesizes audio from the text response.\n"
-            "- The response and audio are sent back to the client."
+        else:
+            response = (
+                "- Provider selection happens in llm_service.py.\n"
+                "- The shared tool registry lives in llm_tools.py.\n"
+                "- main.py receives the text message over WebSocket.\n"
+                "- The provider generates a response and may call tools.\n"
+                "- voice_service.py synthesizes audio from the text response.\n"
+                "- The response and audio are sent back to the client."
+            )
+        self._record_telemetry(
+            ProviderTelemetry(
+                provider=self.name,
+                model=self.model,
+                response_chars=len(response),
+                response_words=len(response.split()),
+            )
         )
+        return response
 
     def reset(self) -> str:
+        self._clear_telemetry()
         return "Conversation cleared. Ready for your next command, Boss."
 
 
@@ -207,6 +219,7 @@ async def run_target(
             except Exception as exc:  # pragma: no cover - defensive runtime guard
                 error = str(exc)
             elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
+            telemetry = provider.get_last_telemetry()
 
             evaluation = case.evaluate(response) if not error else {"score": 0.0, "details": {"error": error}}
             results.append(
@@ -222,6 +235,7 @@ async def run_target(
                     "error": error,
                     "response": response,
                     "checks": evaluation["details"],
+                    "provider_telemetry": telemetry.to_dict() if telemetry else None,
                 }
             )
             status = f"score={evaluation['score']} latency_ms={elapsed_ms}"

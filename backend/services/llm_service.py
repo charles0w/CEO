@@ -35,8 +35,16 @@ class LLMService:
     def provider_name(self) -> str:
         return self.provider.name
 
+    @property
+    def provider_model(self) -> str | None:
+        return getattr(self.provider, "model", None)
+
     async def send(self, message: str) -> str:
         return await self.provider.send(message)
+
+    def last_telemetry(self) -> dict | None:
+        telemetry = self.provider.get_last_telemetry()
+        return telemetry.to_dict() if telemetry else None
 
     def reset(self) -> str:
         return self.provider.reset()
