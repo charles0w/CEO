@@ -1,0 +1,22 @@
+[
+  {
+    "provider": "ollama",
+    "model": "qwen2.5-coder:14b",
+    "label": "current-installed-baseline"
+  },
+  {
+    "provider": "ollama",
+    "model": "qwen3:8b",
+    "label": "target-general-reasoning"
+  },
+  {
+    "provider": "ollama",
+    "model": "gemma3:12b",
+    "label": "target-general-efficient"
+  },
+  {
+    "provider": "ollama",
+    "model": "phi4:14b",
+    "label": "target-lightweight-reasoning"
+  }
+]
