@@ -18,6 +18,7 @@ class OllamaService(BaseLLMProvider):
         think: bool | str | None = None,
         max_tool_rounds: int | None = None,
         timeout: float | None = None,
+        tools_enabled: bool | None = None,
     ):
         super().__init__()
         self.base_url = (base_url or settings.ollama_base_url).rstrip("/")
@@ -25,6 +26,7 @@ class OllamaService(BaseLLMProvider):
         self.think = settings.ollama_think if think is None else think
         self.max_tool_rounds = max_tool_rounds or settings.ollama_tool_iterations
         self.timeout = timeout or settings.ollama_timeout_seconds
+        self.tools_enabled = settings.ollama_tools_enabled if tools_enabled is None else tools_enabled
         self.messages: list[dict[str, Any]] = []
         self._reset_messages()
 
@@ -35,9 +37,10 @@ class OllamaService(BaseLLMProvider):
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": self.messages,
-            "tools": OLLAMA_TOOLS,
             "stream": False,
         }
+        if self.tools_enabled:
+            payload["tools"] = OLLAMA_TOOLS
         if self.think not in (None, ""):
             payload["think"] = self.think
         return payload

@@ -1,7 +1,7 @@
 # CEO local benchmark results
 
 Date: 2026-04-28
-Status: first three-model quick-profile comparison captured; Gemma tool-compatibility issue identified
+Status: first three-model quick-profile comparison captured; Gemma raw-chat rerun captured
 
 ## Scope of this pass
 
@@ -19,7 +19,7 @@ The broader target comparison set is:
 
 At the time of this note:
 - `qwen3:8b` has now been benchmarked
-- `gemma3:12b` has now been installed and benchmarked through the current tool-enabled CEO Ollama path
+- `gemma3:12b` has now been installed and benchmarked through both the tool-enabled and no-tools Ollama paths
 - `phi4:14b` is still pending
 
 ## qwen2.5-coder quick-profile command
@@ -161,7 +161,7 @@ Interpretation:
 - on this benchmark slice it delivered no quality gain over `qwen2.5-coder:14b` and imposed a much worse latency cost
 - after this run, the next useful comparison was `gemma3:12b`, followed by `phi4:14b`
 
-## gemma3:12b quick-profile compatibility run
+## gemma3:12b tool-enabled compatibility run
 
 Setup:
 - pulled `gemma3:12b` into Ollama successfully
@@ -210,14 +210,59 @@ Interpretation:
 - Ollama rejects tool-enabled chat requests for `gemma3:12b`
 - `gemma3:12b` cannot be evaluated fairly or used as the default CEO provider until CEO has a no-tools/raw-chat mode or provider capability routing
 
+## gemma3:12b no-tools raw-chat quick-profile run
+
+After the compatibility failure above, the Ollama provider and benchmark harness were updated to support disabling tool schemas.
+
+Command used:
+
+```bash
+cd backend
+python3 -m benchmarks.run_llm_bench \
+  --provider ollama \
+  --model gemma3:12b \
+  --profile quick \
+  --tools false \
+  --output-dir ../output/benchmarks
+```
+
+Artifacts:
+
+- `output/benchmarks/20260428T215654+0000_ollama-gemma3-12b-tools-false.json`
+- `output/benchmarks/20260428T215654+0000_ollama-gemma3-12b-tools-false.md`
+
+Aggregate result:
+- average score: `0.667`
+- average latency: `61112.6 ms`
+
+Case breakdown:
+- `git_safety_protocol`: score `1.0`, latency `32406.0 ms`
+- `structured_rollout_json`: score `0.0`, latency `119123.2 ms`
+- `local_model_selection`: score `1.0`, latency `31808.7 ms`
+
+Telemetry observations:
+- all three cases completed in a single raw-chat round with `tool_call_count=0`
+- the structured JSON case generated `1004` eval tokens and took about `119s`
+- the two passing cases were much faster, around `32s` each
+
+What Gemma did well in no-tools mode:
+- correctly described the required git safety protocol and named `get_git_status_and_diff()`
+- gave a clear local-model selection answer with a `Default first pick:` line
+- ran successfully without the Ollama tool-schema rejection
+
+What Gemma did poorly in no-tools mode:
+- failed the strict JSON benchmark by returning a fenced, verbose JSON-style response instead of compact strict JSON
+- was much slower than `qwen2.5-coder:14b` on the comparable quick profile
+- cannot call CEO tools in this mode, so it is a raw-chat fallback candidate rather than a full assistant backend
+
 Current local-provider ranking from this pass:
-- `qwen2.5-coder:14b` is still the best current usable local default candidate because it handles the tool-enabled CEO path and completes the quick profile
+- `qwen2.5-coder:14b` is still the best current full-CEO local default candidate because it handles the tool-enabled path and is much faster than the alternatives tested so far
+- `gemma3:12b` is the best current no-tools/raw-chat candidate because it passes two of three quick-profile cases once tools are disabled
 - `qwen3:8b` is not a good first default on this machine/config because it matched `qwen2.5-coder:14b` on score but was much slower and timed out on one quick-profile case
-- `gemma3:12b` is promising enough to keep testing, but it is blocked by tool compatibility in the current adapter
 
 ## Immediate next action
 
-1. Add a no-tools/raw-chat benchmark path so non-tool Ollama models can be evaluated fairly.
-2. Add provider capability routing so CEO does not send tools to models that reject tools.
-3. Re-benchmark `gemma3:12b` in no-tools mode to measure raw answer quality.
-4. Benchmark `phi4:14b` after that.
+1. Benchmark `phi4:14b` with the same quick profile if it can be installed locally.
+2. Compare `phi4:14b` against `qwen2.5-coder:14b` for tool-enabled use if supported.
+3. If `phi4:14b` rejects tools, rerun it with `--tools false` and classify it as a raw-chat candidate.
+4. Consider a stricter structured-output prompt or parser cleanup only after the first model shortlist is complete.

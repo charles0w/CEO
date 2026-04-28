@@ -34,6 +34,7 @@ class BenchmarkTarget:
     think: bool | str | None = None
     timeout: float | None = None
     max_tool_rounds: int | None = None
+    tools_enabled: bool | None = None
 
     @property
     def display_name(self) -> str:
@@ -48,6 +49,8 @@ class BenchmarkTarget:
             parts.append(f"timeout={self.timeout}")
         if self.max_tool_rounds is not None:
             parts.append(f"tool_rounds={self.max_tool_rounds}")
+        if self.tools_enabled is not None:
+            parts.append(f"tools={str(self.tools_enabled).lower()}")
         return " / ".join(parts)
 
 
@@ -132,6 +135,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--timeout", type=float, help="Optional provider timeout override in seconds.")
     parser.add_argument("--max-tool-rounds", type=int, help="Optional Ollama tool-loop limit override.")
+    parser.add_argument(
+        "--tools",
+        help="Optional Ollama tools override. Use false to benchmark raw chat for models that do not support tools.",
+    )
     parser.add_argument("--targets-file", help="JSON file with a list of benchmark targets.")
     parser.add_argument("--list-cases", action="store_true", help="List available benchmark cases and exit.")
     parser.add_argument(
@@ -170,6 +177,13 @@ def parse_boolish(value: Any) -> bool | str | None:
     return value
 
 
+def parse_optional_bool(value: Any, name: str) -> bool | None:
+    parsed = parse_boolish(value)
+    if parsed in (True, False, None):
+        return parsed
+    raise SystemExit(f"{name} must be true or false, got {value!r}.")
+
+
 def load_targets(args: argparse.Namespace) -> list[BenchmarkTarget]:
     if args.targets_file:
         data = json.loads(Path(args.targets_file).read_text(encoding="utf-8"))
@@ -182,6 +196,7 @@ def load_targets(args: argparse.Namespace) -> list[BenchmarkTarget]:
                 think=parse_boolish(item.get("think")),
                 timeout=item.get("timeout"),
                 max_tool_rounds=item.get("max_tool_rounds"),
+                tools_enabled=parse_optional_bool(item.get("tools_enabled", item.get("tools")), "tools"),
             )
             for item in data
         ]
@@ -197,6 +212,7 @@ def load_targets(args: argparse.Namespace) -> list[BenchmarkTarget]:
             think=parse_boolish(args.think),
             timeout=args.timeout,
             max_tool_rounds=args.max_tool_rounds,
+            tools_enabled=parse_optional_bool(args.tools, "--tools"),
         )
     ]
 
@@ -245,6 +261,7 @@ def instantiate_provider(target: BenchmarkTarget) -> BaseLLMProvider:
         think=target.think,
         timeout=target.timeout,
         max_tool_rounds=target.max_tool_rounds,
+        tools_enabled=target.tools_enabled,
     )
 
 
@@ -303,6 +320,7 @@ async def run_target(
             "think": target.think,
             "timeout": target.timeout,
             "max_tool_rounds": target.max_tool_rounds,
+            "tools_enabled": target.tools_enabled,
             "display_name": target.display_name,
         },
         "summary": {

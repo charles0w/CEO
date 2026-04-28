@@ -87,6 +87,7 @@ GEMINI_MODEL=gemini-2.0-flash
 OLLAMA_BASE_URL=http://localhost:11434/api
 OLLAMA_MODEL=qwen3:8b
 OLLAMA_THINK=
+OLLAMA_TOOLS_ENABLED=true
 GITHUB_TOKEN=                          # optional — for GitHub integration
 OBSIDIAN_VAULT_PATH=C:/Users/charl/Desktop/obi-secondbrain
 WHISPER_MODEL=base                     # tiny | base | small
@@ -109,6 +110,13 @@ Config-variant example:
 ```bash
 cd backend
 python -m benchmarks.run_llm_bench --provider ollama --model qwen3:8b --profile quick --timeout 180 --think false
+```
+
+No-tools example for Ollama models that reject tool schemas:
+
+```bash
+cd backend
+python -m benchmarks.run_llm_bench --provider ollama --model gemma3:12b --profile quick --tools false
 ```
 
 Multi-target example:

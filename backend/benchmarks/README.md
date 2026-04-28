@@ -66,6 +66,13 @@ cd backend
 python -m benchmarks.run_llm_bench --provider ollama --model qwen3:8b --profile quick --timeout 180 --think false
 ```
 
+No-tools example for Ollama models that reject tool schemas:
+
+```bash
+cd backend
+python -m benchmarks.run_llm_bench --provider ollama --model gemma3:12b --profile quick --tools false
+```
+
 Target-file variant example:
 
 ```bash
@@ -80,6 +87,7 @@ The `quick` profile runs:
 
 Use it for first-pass comparison when the full repo-grounded prompt set is too slow.
 Use the runtime overrides when you need to compare provider configuration variants without editing `backend/.env`.
+Use `--tools false` when an Ollama model supports raw chat but not tool-calling.
 
 ## Outputs
 

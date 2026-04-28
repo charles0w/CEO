@@ -177,3 +177,33 @@ Observed result:
 Why this matters:
 - the harness can now classify this as a capability mismatch instead of a vague model failure
 - CEO needs a no-tools/raw-chat path before non-tool local models can be benchmarked fairly
+
+## Iteration 7: no-tools Ollama benchmark mode
+
+The `gemma3:12b` compatibility result made the next requirement concrete:
+- some Ollama models can answer normal chat prompts but reject tool schemas entirely
+- the harness needed a way to compare those models without pretending they are broken
+
+Changes made in this iteration:
+- `backend/services/ollama_service.py` now accepts a `tools_enabled` override
+- `backend/services/llm_service.py` passes the override through provider creation
+- `backend/config.py` now exposes `OLLAMA_TOOLS_ENABLED` for backend runtime configuration
+- `backend/benchmarks/run_llm_bench.py` now accepts `--tools false`
+- benchmark target JSON files can use either `tools` or `tools_enabled`
+- `README.md`, `backend/.env.example`, and `backend/benchmarks/README.md` document the no-tools path
+
+Validation:
+- `python3 -m py_compile backend/config.py backend/services/llm_service.py backend/services/ollama_service.py backend/benchmarks/run_llm_bench.py`
+- `cd backend && python3 -m benchmarks.run_llm_bench --provider mock --profile quick --tools false --output-dir /tmp/ceo-bench-tools-flag`
+
+First real no-tools run:
+- `cd backend && python3 -m benchmarks.run_llm_bench --provider ollama --model gemma3:12b --profile quick --tools false --output-dir ../output/benchmarks`
+
+Observed result:
+- `gemma3:12b` scored `0.667` in no-tools mode
+- it passed `git_safety_protocol` and `local_model_selection`
+- it failed `structured_rollout_json` by returning a verbose fenced JSON-style answer instead of strict JSON
+
+Why this matters:
+- CEO can now separately evaluate full tool-capable local models and raw-chat local models
+- `gemma3:12b` should not be treated as a full CEO backend yet, but it remains useful for raw local chat testing
