@@ -91,6 +91,10 @@ class OllamaService(BaseLLMProvider):
     @staticmethod
     def _error_detail(exc: Exception) -> str:
         detail = str(exc).strip()
+        if isinstance(exc, httpx.HTTPStatusError):
+            response_text = exc.response.text.strip()
+            if response_text:
+                detail = f"{detail} - {response_text}" if detail else response_text
         if detail:
             return f"{exc.__class__.__name__}: {detail}"
         return exc.__class__.__name__

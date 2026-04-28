@@ -155,3 +155,25 @@ Changes made in this iteration:
 Why this matters:
 - the next `qwen3:8b` rerun can distinguish model weakness from runtime misconfiguration
 - later local comparisons can test safer time budgets without mutating `backend/.env`
+
+## Iteration 6: Ollama HTTP error bodies and tool compatibility
+
+The first `gemma3:12b` benchmark attempt showed another observability gap:
+- Ollama HTTP status failures surfaced as generic `400 Bad Request` messages
+- the benchmark needed the response body to distinguish model incompatibility from server failure
+
+Change made in this iteration:
+- `backend/services/ollama_service.py` now appends the Ollama response body to `HTTPStatusError` details when available
+
+Validation and finding:
+- `python3 -m py_compile backend/services/ollama_service.py`
+- `cd backend && python3 -m benchmarks.run_llm_bench --provider ollama --model gemma3:12b --profile quick --output-dir ../output/benchmarks`
+
+Observed result:
+- `gemma3:12b` is installed and works through direct `ollama run`
+- the current CEO tool-enabled Ollama chat path is rejected for `gemma3:12b`
+- Ollama returned `{"error":"registry.ollama.ai/library/gemma3:12b does not support tools"}`
+
+Why this matters:
+- the harness can now classify this as a capability mismatch instead of a vague model failure
+- CEO needs a no-tools/raw-chat path before non-tool local models can be benchmarked fairly
