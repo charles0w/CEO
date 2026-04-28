@@ -1,0 +1,17 @@
+[
+  {
+    "provider": "ollama",
+    "model": "qwen3:8b",
+    "label": "fast-baseline"
+  },
+  {
+    "provider": "ollama",
+    "model": "gemma3:12b",
+    "label": "general-local"
+  },
+  {
+    "provider": "ollama",
+    "model": "phi4:14b",
+    "label": "lightweight-reasoning"
+  }
+]

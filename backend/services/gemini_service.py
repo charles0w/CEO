@@ -9,15 +9,16 @@ from services.llm_tools import GEMINI_TOOLS, build_system_prompt
 class GeminiService(BaseLLMProvider):
     name = "gemini"
 
-    def __init__(self):
+    def __init__(self, model: str | None = None):
         if not settings.gemini_api_key:
             raise ValueError("GEMINI_API_KEY is required when LLM_PROVIDER=gemini.")
         self.client = genai.Client(api_key=settings.gemini_api_key)
+        self.model = model or settings.gemini_model
         self._new_chat()
 
     def _new_chat(self):
         self.chat = self.client.chats.create(
-            model=settings.gemini_model,
+            model=self.model,
             config=types.GenerateContentConfig(
                 system_instruction=build_system_prompt(),
                 tools=GEMINI_TOOLS,

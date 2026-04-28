@@ -93,6 +93,26 @@ WHISPER_MODEL=base                     # tiny | base | small
 TTS_VOICE=en-US-GuyNeural
 ```
 
+## Benchmarking local models
+
+The repo includes a benchmark harness for comparing local and hosted model variants with the same CEO-oriented case set.
+
+Single-target example:
+
+```bash
+cd backend
+python -m benchmarks.run_llm_bench --provider ollama --model qwen3:8b
+```
+
+Multi-target example:
+
+```bash
+cd backend
+python -m benchmarks.run_llm_bench --targets-file benchmarks/targets.research-shortlist.example.json
+```
+
+Results are written under `output/benchmarks/`. See `backend/benchmarks/README.md` for details.
+
 ---
 
 ## Architecture

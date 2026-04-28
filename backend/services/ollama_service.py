@@ -10,11 +10,19 @@ from services.llm_tools import OLLAMA_TOOLS, build_system_prompt, invoke_tool
 class OllamaService(BaseLLMProvider):
     name = "ollama"
 
-    def __init__(self):
-        self.base_url = settings.ollama_base_url.rstrip("/")
-        self.model = settings.ollama_model
-        self.max_tool_rounds = settings.ollama_tool_iterations
-        self.timeout = settings.ollama_timeout_seconds
+    def __init__(
+        self,
+        model: str | None = None,
+        base_url: str | None = None,
+        think: bool | str | None = None,
+        max_tool_rounds: int | None = None,
+        timeout: float | None = None,
+    ):
+        self.base_url = (base_url or settings.ollama_base_url).rstrip("/")
+        self.model = model or settings.ollama_model
+        self.think = settings.ollama_think if think is None else think
+        self.max_tool_rounds = max_tool_rounds or settings.ollama_tool_iterations
+        self.timeout = timeout or settings.ollama_timeout_seconds
         self.messages: list[dict[str, Any]] = []
         self._reset_messages()
 
@@ -28,8 +36,8 @@ class OllamaService(BaseLLMProvider):
             "tools": OLLAMA_TOOLS,
             "stream": False,
         }
-        if settings.ollama_think not in (None, ""):
-            payload["think"] = settings.ollama_think
+        if self.think not in (None, ""):
+            payload["think"] = self.think
         return payload
 
     @staticmethod
