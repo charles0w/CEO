@@ -59,12 +59,27 @@ cd backend
 python -m benchmarks.run_llm_bench --provider ollama --model qwen3:8b --profile quick
 ```
 
+Runtime override example:
+
+```bash
+cd backend
+python -m benchmarks.run_llm_bench --provider ollama --model qwen3:8b --profile quick --timeout 180 --think false
+```
+
+Target-file variant example:
+
+```bash
+cd backend
+python -m benchmarks.run_llm_bench --targets-file benchmarks/targets.qwen3-variants.example.json --profile quick
+```
+
 The `quick` profile runs:
 - `git_safety_protocol`
 - `structured_rollout_json`
 - `local_model_selection`
 
 Use it for first-pass comparison when the full repo-grounded prompt set is too slow.
+Use the runtime overrides when you need to compare provider configuration variants without editing `backend/.env`.
 
 ## Outputs
 

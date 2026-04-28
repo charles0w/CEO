@@ -104,6 +104,13 @@ cd backend
 python -m benchmarks.run_llm_bench --provider ollama --model qwen3:8b
 ```
 
+Config-variant example:
+
+```bash
+cd backend
+python -m benchmarks.run_llm_bench --provider ollama --model qwen3:8b --profile quick --timeout 180 --think false
+```
+
 Multi-target example:
 
 ```bash

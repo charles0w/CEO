@@ -31,6 +31,9 @@ class BenchmarkTarget:
     model: str | None = None
     label: str | None = None
     base_url: str | None = None
+    think: bool | str | None = None
+    timeout: float | None = None
+    max_tool_rounds: int | None = None
 
     @property
     def display_name(self) -> str:
@@ -39,6 +42,12 @@ class BenchmarkTarget:
             parts.append(self.model)
         if self.label:
             parts.append(self.label)
+        if self.think is not None:
+            parts.append(f"think={self.think}")
+        if self.timeout is not None:
+            parts.append(f"timeout={self.timeout}")
+        if self.max_tool_rounds is not None:
+            parts.append(f"tool_rounds={self.max_tool_rounds}")
         return " / ".join(parts)
 
 
@@ -117,6 +126,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--provider", choices=["gemini", "ollama", "mock"], help="Provider to benchmark.")
     parser.add_argument("--model", help="Model name override for the provider.")
     parser.add_argument("--base-url", help="Base URL override for providers that use HTTP APIs.")
+    parser.add_argument(
+        "--think",
+        help="Optional Ollama think override. Use true/false for booleans or pass a provider-specific string.",
+    )
+    parser.add_argument("--timeout", type=float, help="Optional provider timeout override in seconds.")
+    parser.add_argument("--max-tool-rounds", type=int, help="Optional Ollama tool-loop limit override.")
     parser.add_argument("--targets-file", help="JSON file with a list of benchmark targets.")
     parser.add_argument("--list-cases", action="store_true", help="List available benchmark cases and exit.")
     parser.add_argument(
@@ -140,6 +155,21 @@ def sanitize_filename(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "-", value).strip("-").lower()
 
 
+def parse_boolish(value: Any) -> bool | str | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    lowered = str(value).strip().lower()
+    if lowered in {"", "none", "null"}:
+        return None
+    if lowered in {"true", "1", "yes", "on"}:
+        return True
+    if lowered in {"false", "0", "no", "off"}:
+        return False
+    return value
+
+
 def load_targets(args: argparse.Namespace) -> list[BenchmarkTarget]:
     if args.targets_file:
         data = json.loads(Path(args.targets_file).read_text(encoding="utf-8"))
@@ -149,6 +179,9 @@ def load_targets(args: argparse.Namespace) -> list[BenchmarkTarget]:
                 model=item.get("model"),
                 label=item.get("label"),
                 base_url=item.get("base_url"),
+                think=parse_boolish(item.get("think")),
+                timeout=item.get("timeout"),
+                max_tool_rounds=item.get("max_tool_rounds"),
             )
             for item in data
         ]
@@ -156,7 +189,16 @@ def load_targets(args: argparse.Namespace) -> list[BenchmarkTarget]:
     if not args.provider:
         raise SystemExit("Either --provider or --targets-file is required.")
 
-    return [BenchmarkTarget(provider=args.provider, model=args.model, base_url=args.base_url)]
+    return [
+        BenchmarkTarget(
+            provider=args.provider,
+            model=args.model,
+            base_url=args.base_url,
+            think=parse_boolish(args.think),
+            timeout=args.timeout,
+            max_tool_rounds=args.max_tool_rounds,
+        )
+    ]
 
 
 def select_cases(args: argparse.Namespace) -> list[BenchmarkCase]:
@@ -196,7 +238,14 @@ def current_commit() -> str | None:
 def instantiate_provider(target: BenchmarkTarget) -> BaseLLMProvider:
     if target.provider == "mock":
         return MockProvider(model=target.model)
-    return create_provider(provider=target.provider, model=target.model, base_url=target.base_url)
+    return create_provider(
+        provider=target.provider,
+        model=target.model,
+        base_url=target.base_url,
+        think=target.think,
+        timeout=target.timeout,
+        max_tool_rounds=target.max_tool_rounds,
+    )
 
 
 async def run_target(
@@ -251,6 +300,9 @@ async def run_target(
             "model": target.model,
             "label": target.label,
             "base_url": target.base_url,
+            "think": target.think,
+            "timeout": target.timeout,
+            "max_tool_rounds": target.max_tool_rounds,
             "display_name": target.display_name,
         },
         "summary": {

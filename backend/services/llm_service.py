@@ -12,6 +12,9 @@ def create_provider(
     provider: str | None = None,
     model: str | None = None,
     base_url: str | None = None,
+    think: bool | str | None = None,
+    timeout: float | None = None,
+    max_tool_rounds: int | None = None,
 ) -> BaseLLMProvider:
     provider_name = (provider or settings.llm_provider).strip().lower()
     if provider_name == "gemini":
@@ -21,7 +24,13 @@ def create_provider(
     if provider_name == "ollama":
         from services.ollama_service import OllamaService
 
-        return OllamaService(model=model, base_url=base_url)
+        return OllamaService(
+            model=model,
+            base_url=base_url,
+            think=think,
+            timeout=timeout,
+            max_tool_rounds=max_tool_rounds,
+        )
     raise ValueError(
         f"Unsupported LLM_PROVIDER '{provider or settings.llm_provider}'. Expected 'gemini' or 'ollama'."
     )

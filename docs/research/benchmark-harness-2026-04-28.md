@@ -138,3 +138,20 @@ Change made in this iteration:
 Why this matters:
 - future benchmark failures will be easier to classify without reading surrounding logs
 - timeout regressions can be separated from model-quality failures in the saved benchmark artifacts
+
+## Iteration 5: benchmark runtime-override support
+
+The `qwen3:8b` timeout result also exposed a workflow gap:
+- the harness could compare models, but not configuration variants of the same model
+- changing timeout or think behavior required editing shared app settings
+
+Changes made in this iteration:
+- `backend/benchmarks/run_llm_bench.py` now accepts `--think`, `--timeout`, and `--max-tool-rounds`
+- target JSON files can now carry the same fields per target
+- `backend/services/llm_service.py` now passes those overrides through to `OllamaService`
+- added `backend/benchmarks/targets.qwen3-variants.example.json` for side-by-side config testing
+- updated benchmark docs with single-run and target-file examples for config variants
+
+Why this matters:
+- the next `qwen3:8b` rerun can distinguish model weakness from runtime misconfiguration
+- later local comparisons can test safer time budgets without mutating `backend/.env`
