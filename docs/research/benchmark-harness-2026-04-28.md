@@ -80,3 +80,18 @@ Those need to be pulled locally before the first real benchmark pass.
 2. Run the harness across all three.
 3. Save the benchmark outputs and an analysis note in the repo.
 4. Pick the strongest first default candidate for CEO local testing.
+
+## Iteration 2: practical improvements after the first live run
+
+After the first real Ollama baseline, two usability issues became clear:
+- long runs produced no progress output until the target finished
+- the lighter 3-case subset had to be selected manually
+
+Changes made after that observation:
+- added per-case progress logging in `backend/benchmarks/run_llm_bench.py`
+- added a built-in `--profile quick` option for the lighter comparison subset
+- documented the quick profile in `backend/benchmarks/README.md`
+
+Validation for this iteration:
+- `python3 -m py_compile backend/benchmarks/*.py`
+- `cd backend && python3 -m benchmarks.run_llm_bench --provider mock --profile quick --output-dir /tmp/ceo-bench-quick`

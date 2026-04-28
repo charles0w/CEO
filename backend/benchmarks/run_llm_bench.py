@@ -107,6 +107,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-url", help="Base URL override for providers that use HTTP APIs.")
     parser.add_argument("--targets-file", help="JSON file with a list of benchmark targets.")
     parser.add_argument("--list-cases", action="store_true", help="List available benchmark cases and exit.")
+    parser.add_argument(
+        "--profile",
+        choices=["quick", "full"],
+        default="full",
+        help="Named benchmark profile. 'quick' runs the light comparison subset.",
+    )
     parser.add_argument("--case", action="append", help="Run only the specified case id. May be repeated.")
     parser.add_argument("--limit", type=int, help="Run only the first N selected cases.")
     parser.add_argument("--repeat", type=int, default=1, help="Repeat each case this many times per target.")
@@ -143,6 +149,9 @@ def load_targets(args: argparse.Namespace) -> list[BenchmarkTarget]:
 
 def select_cases(args: argparse.Namespace) -> list[BenchmarkCase]:
     cases = build_cases()
+    if args.profile == "quick" and not args.case:
+        quick_ids = {"git_safety_protocol", "structured_rollout_json", "local_model_selection"}
+        cases = [case for case in cases if case.case_id in quick_ids]
     if args.case:
         wanted = set(args.case)
         cases = [case for case in cases if case.case_id in wanted]
@@ -188,6 +197,7 @@ async def run_target(
 
     for case in cases:
         for attempt in range(1, repeat + 1):
+            print(f"  Case {case.case_id} (attempt {attempt}/{repeat})...")
             provider.reset()
             started = time.perf_counter()
             error = None
@@ -214,6 +224,10 @@ async def run_target(
                     "checks": evaluation["details"],
                 }
             )
+            status = f"score={evaluation['score']} latency_ms={elapsed_ms}"
+            if error:
+                status += f" error={error}"
+            print(f"    done: {status}")
 
     avg_score = round(sum(item["score"] for item in results) / len(results), 3) if results else 0.0
     avg_latency = round(sum(item["latency_ms"] for item in results) / len(results), 1) if results else 0.0
