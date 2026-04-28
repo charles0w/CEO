@@ -1,6 +1,6 @@
 # CEO — Personal AI Assistant
 
-CEO is a Jarvis-style personal AI assistant that runs locally on your Desktop. Talk to it via voice or text from your phone or browser. Powered by Gemini 2.0 Flash.
+CEO is a Jarvis-style personal AI assistant that runs locally on your Desktop. Talk to it via voice or text from your phone or browser. The backend can use either Gemini or a local Ollama model.
 
 ---
 
@@ -14,7 +14,8 @@ CEO is a Jarvis-style personal AI assistant that runs locally on your Desktop. T
 winget install ffmpeg
 ```
 
-- **Gemini API key** — free tier at [aistudio.google.com](https://aistudio.google.com)
+- **Gemini API key** — required only when `LLM_PROVIDER=gemini`
+- **Ollama** — required only when `LLM_PROVIDER=ollama`
 
 ---
 
@@ -25,7 +26,9 @@ winget install ffmpeg
 ```bash
 cd backend
 copy .env.example .env
-# Edit .env and fill in your GEMINI_API_KEY
+# Edit .env and choose a provider:
+# - Gemini: set LLM_PROVIDER=gemini and fill in GEMINI_API_KEY
+# - Ollama: set LLM_PROVIDER=ollama and make sure Ollama is running locally
 ```
 
 Then start the server (double-click or run in terminal):
@@ -37,6 +40,8 @@ start.bat
 This creates a virtual environment, installs dependencies, and starts the server at `http://0.0.0.0:8000`.
 
 > **First run:** Whisper downloads the `base` STT model (~145 MB) automatically.
+>
+> **If using Ollama:** pull a model first, for example `ollama pull qwen3:8b`.
 
 ### 2. Mobile / Web App
 
@@ -76,7 +81,12 @@ For remote access: install [ngrok](https://ngrok.com) and run `ngrok http 8000` 
 ## Configuration (`backend/.env`)
 
 ```env
-GEMINI_API_KEY=your_key_here
+LLM_PROVIDER=gemini                  # gemini | ollama
+GEMINI_API_KEY=your_key_here         # required only for Gemini
+GEMINI_MODEL=gemini-2.0-flash
+OLLAMA_BASE_URL=http://localhost:11434/api
+OLLAMA_MODEL=qwen3:8b
+OLLAMA_THINK=
 GITHUB_TOKEN=                          # optional — for GitHub integration
 OBSIDIAN_VAULT_PATH=C:/Users/charl/Desktop/obi-secondbrain
 WHISPER_MODEL=base                     # tiny | base | small
@@ -93,7 +103,11 @@ CEO/
 │   ├── main.py                    # FastAPI — WebSocket /ws
 │   ├── config.py                  # Settings from .env
 │   └── services/
-│       ├── gemini_service.py      # Gemini 2.0 Flash brain + tool calling
+│       ├── llm_service.py         # Provider selection
+│       ├── llm_provider.py        # Provider interface
+│       ├── llm_tools.py           # Shared system prompt + tool registry
+│       ├── gemini_service.py      # Gemini backend
+│       ├── ollama_service.py      # Ollama backend + tool loop
 │       ├── voice_service.py       # faster-whisper (STT) + edge-tts (TTS)
 │       ├── obsidian_service.py    # Obsidian vault read/write/search
 │       ├── github_service.py      # GitHub API via PyGithub

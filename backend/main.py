@@ -7,19 +7,19 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
-from services.gemini_service import GeminiService
+from services.llm_service import LLMService
 from services.voice_service import VoiceService
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [CEO] %(message)s")
 log = logging.getLogger("CEO")
 
-gemini = GeminiService()
+llm = LLMService()
 voice = VoiceService()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    log.info("CEO is online.")
+    log.info(f"CEO is online using {llm.provider_name}.")
     yield
     log.info("CEO shutting down.")
 
@@ -73,7 +73,7 @@ async def ws_endpoint(websocket: WebSocket):
             msg = json.loads(raw)
 
             if msg.get("type") == "reset":
-                text = gemini.reset()
+                text = llm.reset()
                 await manager.send(websocket, {"type": "response", "text": text, "audio": None})
                 continue
 
@@ -91,7 +91,7 @@ async def ws_endpoint(websocket: WebSocket):
                 continue
 
             log.info(f"User: {user_text}")
-            response_text = await gemini.send(user_text)
+            response_text = await llm.send(user_text)
             log.info(f"CEO: {response_text[:120]}")
 
             response_audio = await voice.synthesize(response_text)
@@ -110,7 +110,7 @@ async def ws_endpoint(websocket: WebSocket):
 
 @app.get("/health")
 async def health():
-    return {"status": "online", "connections": len(manager.connections)}
+    return {"status": "online", "connections": len(manager.connections), "llm_provider": llm.provider_name}
 
 
 @app.post("/transcribe")
