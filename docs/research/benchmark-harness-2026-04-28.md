@@ -125,3 +125,16 @@ Observed validation result:
 - the mock benchmark completed successfully
 - the JSON output now includes `provider_telemetry` per case
 - the telemetry payload at minimum includes provider, model, and response size, with richer fields available for real providers
+
+## Iteration 4: normalize blank Ollama timeout errors
+
+The first `qwen3:8b` quick-profile run revealed a concrete logging defect:
+- a timeout-style Ollama failure could surface as `CEO Error: Ollama request failed:` with an empty suffix
+- the matching telemetry record could store `error: ""`
+
+Change made in this iteration:
+- `backend/services/ollama_service.py` now normalizes exception details so blank-message failures still report their exception class, for example `ReadTimeout`
+
+Why this matters:
+- future benchmark failures will be easier to classify without reading surrounding logs
+- timeout regressions can be separated from model-quality failures in the saved benchmark artifacts

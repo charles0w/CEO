@@ -88,6 +88,13 @@ class OllamaService(BaseLLMProvider):
             )
         )
 
+    @staticmethod
+    def _error_detail(exc: Exception) -> str:
+        detail = str(exc).strip()
+        if detail:
+            return f"{exc.__class__.__name__}: {detail}"
+        return exc.__class__.__name__
+
     async def send(self, message: str) -> str:
         self.messages.append({"role": "user", "content": message})
         started = time.perf_counter()
@@ -145,25 +152,27 @@ class OllamaService(BaseLLMProvider):
             )
             return error_text
         except httpx.HTTPError as exc:
-            error_text = f"CEO Error: Ollama request failed: {exc}"
+            error_detail = self._error_detail(exc)
+            error_text = f"CEO Error: Ollama request failed: {error_detail}"
             self._record_response_telemetry(
                 text=error_text,
                 duration_ms=round((time.perf_counter() - started) * 1000, 1),
                 payload=last_payload,
                 tool_names=tool_names,
                 rounds=rounds,
-                error=str(exc),
+                error=error_detail,
             )
             return error_text
         except Exception as exc:  # pragma: no cover - defensive runtime guard
-            error_text = f"CEO Error: {exc}"
+            error_detail = self._error_detail(exc)
+            error_text = f"CEO Error: {error_detail}"
             self._record_response_telemetry(
                 text=error_text,
                 duration_ms=round((time.perf_counter() - started) * 1000, 1),
                 payload=last_payload,
                 tool_names=tool_names,
                 rounds=rounds,
-                error=str(exc),
+                error=error_detail,
             )
             return error_text
 
