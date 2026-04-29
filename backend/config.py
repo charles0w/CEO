@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     ollama_think: bool | str | None = None
     ollama_timeout_seconds: float = 120.0
     ollama_tool_iterations: int = 8
-    ollama_tools_enabled: bool = True
+    ollama_tools_enabled: bool | str = "auto"
     github_token: str = ""
     obsidian_vault_path: str = "C:/Users/charl/Desktop/obi-secondbrain"
     whisper_model: str = "base"

@@ -73,6 +73,13 @@ cd backend
 python -m benchmarks.run_llm_bench --provider ollama --model gemma3:12b --profile quick --tools false
 ```
 
+Tool-compatibility probe for models normally routed as no-tools:
+
+```bash
+cd backend
+python -m benchmarks.run_llm_bench --provider ollama --model phi4:14b --profile quick --tools true
+```
+
 Target-file variant example:
 
 ```bash
@@ -87,7 +94,8 @@ The `quick` profile runs:
 
 Use it for first-pass comparison when the full repo-grounded prompt set is too slow.
 Use the runtime overrides when you need to compare provider configuration variants without editing `backend/.env`.
-Use `--tools false` when an Ollama model supports raw chat but not tool-calling.
+By default, `OLLAMA_TOOLS_ENABLED=auto` disables tool schemas for known raw-chat-only Ollama models such as `gemma3:*` and `phi4:*`.
+Use `--tools false` to force raw chat, or `--tools true` to intentionally probe tool compatibility.
 
 ## Outputs
 

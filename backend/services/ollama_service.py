@@ -7,6 +7,11 @@ from config import settings
 from services.llm_provider import BaseLLMProvider, ProviderTelemetry
 from services.llm_tools import OLLAMA_TOOLS, build_system_prompt, invoke_tool
 
+OLLAMA_MODELS_WITHOUT_TOOL_SUPPORT = (
+    "gemma3:",
+    "phi4:",
+)
+
 
 class OllamaService(BaseLLMProvider):
     name = "ollama"
@@ -18,7 +23,7 @@ class OllamaService(BaseLLMProvider):
         think: bool | str | None = None,
         max_tool_rounds: int | None = None,
         timeout: float | None = None,
-        tools_enabled: bool | None = None,
+        tools_enabled: bool | str | None = None,
     ):
         super().__init__()
         self.base_url = (base_url or settings.ollama_base_url).rstrip("/")
@@ -26,9 +31,25 @@ class OllamaService(BaseLLMProvider):
         self.think = settings.ollama_think if think is None else think
         self.max_tool_rounds = max_tool_rounds or settings.ollama_tool_iterations
         self.timeout = timeout or settings.ollama_timeout_seconds
-        self.tools_enabled = settings.ollama_tools_enabled if tools_enabled is None else tools_enabled
+        self.tools_enabled = self._resolve_tools_enabled(
+            settings.ollama_tools_enabled if tools_enabled is None else tools_enabled
+        )
         self.messages: list[dict[str, Any]] = []
         self._reset_messages()
+
+    def _resolve_tools_enabled(self, value: bool | str | None) -> bool:
+        if isinstance(value, bool):
+            return value
+
+        normalized = "" if value is None else str(value).strip().lower()
+        if normalized in {"", "auto", "none", "null"}:
+            model_name = self.model.strip().lower()
+            return not model_name.startswith(OLLAMA_MODELS_WITHOUT_TOOL_SUPPORT)
+        if normalized in {"true", "1", "yes", "on"}:
+            return True
+        if normalized in {"false", "0", "no", "off"}:
+            return False
+        raise ValueError(f"Invalid Ollama tools setting: {value!r}. Use true, false, or auto.")
 
     def _reset_messages(self):
         self.messages = [{"role": "system", "content": build_system_prompt()}]

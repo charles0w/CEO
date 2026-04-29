@@ -359,5 +359,5 @@ Current local-provider ranking from this pass:
 
 1. Treat `qwen2.5-coder:14b` as the current Ollama default for full CEO tool-enabled testing.
 2. Treat `phi4:14b` as the current first no-tools/raw-chat fallback.
-3. Add an automatic Ollama model capability map so known non-tool models do not require manually passing `--tools false`.
-4. Consider a stricter structured-output prompt or parser cleanup only after capability routing is in place.
+3. Add more raw-chat-only families to the automatic Ollama capability map as they are discovered.
+4. Consider a stricter structured-output prompt or parser cleanup only after more candidate models are tested.

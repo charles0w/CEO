@@ -224,3 +224,18 @@ Changes made after that result:
 Why this matters:
 - the default local path should optimize for a working CEO assistant before optimizing for raw model preference
 - raw-chat models remain useful, but they need explicit no-tools routing until CEO has capability-aware provider selection
+
+## Iteration 9: automatic Ollama tool capability routing
+
+After both `gemma3:12b` and `phi4:14b` rejected tool schemas, manual `--tools false` was no longer enough.
+
+Changes made in this iteration:
+- `OLLAMA_TOOLS_ENABLED` now defaults to `auto`
+- `OllamaService` automatically disables tool schemas for known raw-chat-only Ollama model families
+- the first no-tool families are `gemma3:*` and `phi4:*`
+- benchmarks can still force `--tools true` when intentionally probing compatibility
+
+Why this matters:
+- selecting `phi4:14b` or `gemma3:12b` no longer fails immediately just because the global tool setting was left enabled
+- `qwen2.5-coder:14b` still keeps tools enabled by default
+- future model discoveries can be added to one capability list instead of scattered through benchmark commands

@@ -15,7 +15,7 @@ def create_provider(
     think: bool | str | None = None,
     timeout: float | None = None,
     max_tool_rounds: int | None = None,
-    tools_enabled: bool | None = None,
+    tools_enabled: bool | str | None = None,
 ) -> BaseLLMProvider:
     provider_name = (provider or settings.llm_provider).strip().lower()
     if provider_name == "gemini":
