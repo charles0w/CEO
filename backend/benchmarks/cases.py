@@ -38,6 +38,24 @@ def _markdown_section(path: str, heading: str) -> str:
     return "\n".join(lines[start:end])
 
 
+def _extract_repairable_json(text: str) -> str | None:
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        lines = stripped.splitlines()
+        if lines and lines[0].strip().startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        candidate = "\n".join(lines).strip()
+        return candidate or None
+
+    start = stripped.find("{")
+    end = stripped.rfind("}")
+    if start != -1 and end > start:
+        return stripped[start : end + 1]
+    return None
+
+
 @dataclass
 class BenchmarkCase:
     case_id: str
@@ -68,16 +86,38 @@ class BenchmarkCase:
             checks.append(hit)
 
         if self.json_required_keys:
-            json_result = {"valid": False, "missing_keys": list(self.json_required_keys)}
+            json_result = {
+                "valid": False,
+                "missing_keys": list(self.json_required_keys),
+                "repairable": False,
+                "repair_missing_keys": list(self.json_required_keys),
+            }
             try:
                 parsed = json.loads(response)
                 if isinstance(parsed, dict):
                     missing = [key for key in self.json_required_keys if key not in parsed]
-                    json_result = {"valid": True, "missing_keys": missing}
+                    json_result = {
+                        "valid": True,
+                        "missing_keys": missing,
+                        "repairable": False,
+                        "repair_missing_keys": missing,
+                    }
                     checks.append(not missing)
                 else:
                     checks.append(False)
             except json.JSONDecodeError:
+                candidate = _extract_repairable_json(response)
+                if candidate:
+                    try:
+                        repaired = json.loads(candidate)
+                        if isinstance(repaired, dict):
+                            repair_missing = [
+                                key for key in self.json_required_keys if key not in repaired
+                            ]
+                            json_result["repairable"] = not repair_missing
+                            json_result["repair_missing_keys"] = repair_missing
+                    except json.JSONDecodeError:
+                        pass
                 checks.append(False)
             details["json"] = json_result
 
@@ -145,7 +185,8 @@ def build_cases() -> list[BenchmarkCase]:
             category="structured-output",
             title="Return rollout advice as strict JSON",
             prompt=(
-                "Return JSON only. No prose.\n"
+                "Return JSON only. No prose. Do not use markdown fences.\n"
+                "The first character must be { and the last character must be }.\n"
                 "Provide an object with exactly these keys: "
                 "provider, model_candidates, metrics, rollout_risks.\n"
                 "The values should describe how to evaluate a first local provider for CEO."

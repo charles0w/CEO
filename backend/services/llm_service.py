@@ -50,6 +50,12 @@ class LLMService:
     def provider_model(self) -> str | None:
         return getattr(self.provider, "model", None)
 
+    def provider_health(self) -> dict:
+        health_details = getattr(self.provider, "health_details", None)
+        if callable(health_details):
+            return health_details()
+        return {}
+
     async def send(self, message: str) -> str:
         return await self.provider.send(message)
 

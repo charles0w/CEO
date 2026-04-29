@@ -121,6 +121,7 @@ async def health():
         "connections": len(manager.connections),
         "llm_provider": llm.provider_name,
         "llm_model": llm.provider_model,
+        **llm.provider_health(),
     }
 
 

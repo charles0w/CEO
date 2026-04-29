@@ -249,3 +249,54 @@ Why this matters:
 - selecting `phi4:14b` or `gemma3:12b` no longer fails immediately just because the global tool setting was left enabled
 - `qwen2.5-coder:14b` still keeps tools enabled by default
 - future model discoveries can be added to one capability list instead of scattered through benchmark commands
+
+## Iteration 10: health visibility and dynamic tool fallback
+
+The next operational gap was runtime visibility.
+It was not enough for the provider to choose a tool mode internally; `/health` also needed to expose the resolved mode so a running backend can be checked quickly.
+
+Changes made in this iteration:
+- `LLMService` now exposes provider-specific health details
+- `/health` now includes Ollama tool routing details when the active provider is Ollama
+- `OllamaService` telemetry now records `tools_enabled` and `tool_fallback`
+- unknown auto-enabled Ollama models that reject tools with `does not support tools` retry once without tools
+- explicit forced tool probes still surface the error instead of silently falling back
+
+Validation:
+- `python3 -m py_compile backend/main.py backend/config.py backend/services/llm_provider.py backend/services/llm_service.py backend/services/ollama_service.py backend/benchmarks/run_llm_bench.py`
+- fake Ollama client test: first request rejected tools, second request retried without tools and returned `fallback ok`
+- provider health check showed `qwen2.5-coder:14b` as `auto-enabled` and `phi4:14b`/`gemma3:12b` as `auto-disabled`
+- FastAPI `/health` route test showed `qwen2.5-coder:14b` as `auto-enabled`
+- FastAPI `/health` route test showed `phi4:14b` as `auto-disabled`
+- WebSocket text-flow smoke test with TTS stubbed returned `WS smoke ok` through real `qwen2.5-coder:14b` Ollama inference
+
+Why this matters:
+- backend health checks now reveal whether CEO is running full tool-capable mode or raw-chat mode
+- new model families can fail softer in app usage while still being diagnosable in benchmark probes
+- telemetry now preserves whether a response came from tool-enabled mode or fallback raw-chat mode
+
+## Iteration 11: stricter structured-output benchmark prompt
+
+The Phi and Gemma no-tools benchmark runs both failed `structured_rollout_json` in the same way:
+- the models returned JSON-like content inside markdown fences
+- the benchmark requires strict JSON that can be parsed directly with `json.loads`
+
+Change made in this iteration:
+- the structured-output benchmark case now explicitly says not to use markdown fences
+- it also states that the first character must be `{` and the last character must be `}`
+- JSON evaluation now records whether an otherwise strict-failed response is repairable by removing a markdown fence or extracting the outer JSON object
+
+Validation:
+- `python3 -m py_compile backend/benchmarks/cases.py`
+- `cd backend && python3 -m benchmarks.run_llm_bench --provider mock --case structured_rollout_json --output-dir /tmp/ceo-structured-repair-check`
+- `cd backend && python3 -m benchmarks.run_llm_bench --provider ollama --model qwen2.5-coder:14b --case structured_rollout_json --output-dir /tmp/ceo-qwen-structured-strict-check`
+- `cd backend && python3 -m benchmarks.run_llm_bench --provider ollama --model phi4:14b --case structured_rollout_json --output-dir /tmp/ceo-phi-structured-strict-check`
+
+Observed validation result:
+- `qwen2.5-coder:14b` still scored `1.0` on strict JSON after the prompt change
+- `phi4:14b` still scored `0.0` because it returned fenced JSON
+- Phi's fenced JSON was repairable after stripping the markdown fence, which confirms the remaining problem is output wrapping rather than missing required keys
+
+Why this matters:
+- future structured-output runs should separate model JSON weakness from ambiguity in the prompt
+- the benchmark still scores strict parseability instead of forgiving fenced JSON

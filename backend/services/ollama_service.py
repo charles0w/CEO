@@ -11,6 +11,7 @@ OLLAMA_MODELS_WITHOUT_TOOL_SUPPORT = (
     "gemma3:",
     "phi4:",
 )
+OLLAMA_TOOL_UNSUPPORTED_MARKER = "does not support tools"
 
 
 class OllamaService(BaseLLMProvider):
@@ -31,9 +32,12 @@ class OllamaService(BaseLLMProvider):
         self.think = settings.ollama_think if think is None else think
         self.max_tool_rounds = max_tool_rounds or settings.ollama_tool_iterations
         self.timeout = timeout or settings.ollama_timeout_seconds
+        self.tools_setting = settings.ollama_tools_enabled if tools_enabled is None else tools_enabled
         self.tools_enabled = self._resolve_tools_enabled(
-            settings.ollama_tools_enabled if tools_enabled is None else tools_enabled
+            self.tools_setting
         )
+        self.tools_mode = self._resolve_tools_mode(self.tools_setting, self.tools_enabled)
+        self.tool_fallback_triggered = False
         self.messages: list[dict[str, Any]] = []
         self._reset_messages()
 
@@ -50,6 +54,37 @@ class OllamaService(BaseLLMProvider):
         if normalized in {"false", "0", "no", "off"}:
             return False
         raise ValueError(f"Invalid Ollama tools setting: {value!r}. Use true, false, or auto.")
+
+    @staticmethod
+    def _resolve_tools_mode(value: bool | str | None, tools_enabled: bool) -> str:
+        if isinstance(value, bool):
+            return "forced-enabled" if value else "forced-disabled"
+
+        normalized = "" if value is None else str(value).strip().lower()
+        if normalized in {"", "auto", "none", "null"}:
+            return "auto-enabled" if tools_enabled else "auto-disabled"
+        if normalized in {"true", "1", "yes", "on"}:
+            return "forced-enabled"
+        if normalized in {"false", "0", "no", "off"}:
+            return "forced-disabled"
+        return "invalid"
+
+    @staticmethod
+    def _is_tool_unsupported_error(error_detail: str) -> bool:
+        return OLLAMA_TOOL_UNSUPPORTED_MARKER in error_detail.lower()
+
+    def _disable_tools_after_fallback(self) -> None:
+        self.tools_enabled = False
+        self.tools_mode = "fallback-disabled"
+        self.tool_fallback_triggered = True
+
+    def health_details(self) -> dict[str, Any]:
+        return {
+            "ollama_base_url": self.base_url,
+            "ollama_tools_enabled": self.tools_enabled,
+            "ollama_tools_mode": self.tools_mode,
+            "ollama_tool_fallback_triggered": self.tool_fallback_triggered,
+        }
 
     def _reset_messages(self):
         self.messages = [{"role": "system", "content": build_system_prompt()}]
@@ -108,6 +143,8 @@ class OllamaService(BaseLLMProvider):
                 load_duration_ns=payload.get("load_duration"),
                 prompt_eval_duration_ns=payload.get("prompt_eval_duration"),
                 eval_duration_ns=payload.get("eval_duration"),
+                tools_enabled=self.tools_enabled,
+                tool_fallback=self.tool_fallback_triggered,
                 error=error,
             )
         )
@@ -130,44 +167,44 @@ class OllamaService(BaseLLMProvider):
         tool_names: list[str] = []
         last_payload: dict[str, Any] | None = None
 
-        try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                for _ in range(self.max_tool_rounds):
-                    rounds += 1
-                    response = await client.post(f"{self.base_url}/chat", json=self._chat_payload())
-                    response.raise_for_status()
-                    payload = response.json()
-                    last_payload = payload
+        async def run_chat_loop(client: httpx.AsyncClient) -> str:
+            nonlocal rounds, tool_names, last_payload
+            for _ in range(self.max_tool_rounds):
+                rounds += 1
+                response = await client.post(f"{self.base_url}/chat", json=self._chat_payload())
+                response.raise_for_status()
+                payload = response.json()
+                last_payload = payload
 
-                    assistant_message = self._normalize_assistant_message(payload.get("message") or {})
-                    self.messages.append(assistant_message)
+                assistant_message = self._normalize_assistant_message(payload.get("message") or {})
+                self.messages.append(assistant_message)
 
-                    tool_calls = assistant_message.get("tool_calls") or []
-                    if not tool_calls:
-                        text = assistant_message.get("content") or "[No response]"
-                        self._record_response_telemetry(
-                            text=text,
-                            duration_ms=round((time.perf_counter() - started) * 1000, 1),
-                            payload=last_payload,
-                            tool_names=tool_names,
-                            rounds=rounds,
-                        )
-                        return text
+                tool_calls = assistant_message.get("tool_calls") or []
+                if not tool_calls:
+                    text = assistant_message.get("content") or "[No response]"
+                    self._record_response_telemetry(
+                        text=text,
+                        duration_ms=round((time.perf_counter() - started) * 1000, 1),
+                        payload=last_payload,
+                        tool_names=tool_names,
+                        rounds=rounds,
+                    )
+                    return text
 
-                    for tool_call in tool_calls:
-                        function = tool_call.get("function", {})
-                        tool_name = function.get("name", "")
-                        arguments = function.get("arguments")
-                        if tool_name:
-                            tool_names.append(tool_name)
-                        result = invoke_tool(tool_name, arguments)
-                        self.messages.append(
-                            {
-                                "role": "tool",
-                                "tool_name": tool_name,
-                                "content": result,
-                            }
-                        )
+                for tool_call in tool_calls:
+                    function = tool_call.get("function", {})
+                    tool_name = function.get("name", "")
+                    arguments = function.get("arguments")
+                    if tool_name:
+                        tool_names.append(tool_name)
+                    result = invoke_tool(tool_name, arguments)
+                    self.messages.append(
+                        {
+                            "role": "tool",
+                            "tool_name": tool_name,
+                            "content": result,
+                        }
+                    )
 
             error_text = "CEO Error: Ollama tool loop exceeded the configured limit."
             self._record_response_telemetry(
@@ -179,6 +216,21 @@ class OllamaService(BaseLLMProvider):
                 error=error_text,
             )
             return error_text
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                try:
+                    return await run_chat_loop(client)
+                except httpx.HTTPError as exc:
+                    error_detail = self._error_detail(exc)
+                    if (
+                        self.tools_enabled
+                        and self.tools_mode == "auto-enabled"
+                        and self._is_tool_unsupported_error(error_detail)
+                    ):
+                        self._disable_tools_after_fallback()
+                        return await run_chat_loop(client)
+                    raise
         except httpx.HTTPError as exc:
             error_detail = self._error_detail(exc)
             error_text = f"CEO Error: Ollama request failed: {error_detail}"

@@ -23,6 +23,8 @@ class ProviderTelemetry:
     load_duration_ns: int | None = None
     prompt_eval_duration_ns: int | None = None
     eval_duration_ns: int | None = None
+    tools_enabled: bool | None = None
+    tool_fallback: bool | None = None
     error: str | None = None
 
     def to_dict(self) -> dict[str, Any]:

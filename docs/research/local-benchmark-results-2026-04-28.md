@@ -359,5 +359,7 @@ Current local-provider ranking from this pass:
 
 1. Treat `qwen2.5-coder:14b` as the current Ollama default for full CEO tool-enabled testing.
 2. Treat `phi4:14b` as the current first no-tools/raw-chat fallback.
-3. Add more raw-chat-only families to the automatic Ollama capability map as they are discovered.
-4. Consider a stricter structured-output prompt or parser cleanup only after more candidate models are tested.
+3. Test real voice/TTS dependencies after installing the full backend requirements.
+4. Test the mobile app against the LAN WebSocket URL.
+5. Add more raw-chat-only families to the automatic Ollama capability map as they are discovered.
+6. Decide whether CEO should add JSON fence-stripping for structured-output workflows.

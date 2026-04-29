@@ -129,6 +129,7 @@ python -m benchmarks.run_llm_bench --targets-file benchmarks/targets.research-sh
 Results are written under `output/benchmarks/`. See `backend/benchmarks/README.md` for details.
 
 When the backend is running, `/health` now reports both `llm_provider` and `llm_model`, and the server logs per-request LLM telemetry for latency and response size.
+For Ollama, `/health` also reports the resolved tool mode, including `ollama_tools_enabled`, `ollama_tools_mode`, and whether a tool fallback has been triggered.
 
 ---
 
