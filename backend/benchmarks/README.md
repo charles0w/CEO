@@ -26,7 +26,7 @@ Ollama example:
 
 ```bash
 cd backend
-python -m benchmarks.run_llm_bench --provider ollama --model qwen3:8b
+python -m benchmarks.run_llm_bench --provider ollama --model qwen2.5-coder:14b
 ```
 
 Gemini example:
@@ -56,14 +56,14 @@ Quick profile example:
 
 ```bash
 cd backend
-python -m benchmarks.run_llm_bench --provider ollama --model qwen3:8b --profile quick
+python -m benchmarks.run_llm_bench --provider ollama --model qwen2.5-coder:14b --profile quick
 ```
 
 Runtime override example:
 
 ```bash
 cd backend
-python -m benchmarks.run_llm_bench --provider ollama --model qwen3:8b --profile quick --timeout 180 --think false
+python -m benchmarks.run_llm_bench --provider ollama --model qwen2.5-coder:14b --profile quick --timeout 180 --think false
 ```
 
 No-tools example for Ollama models that reject tool schemas:

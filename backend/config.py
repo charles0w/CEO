@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.0-flash"
     ollama_base_url: str = "http://localhost:11434/api"
-    ollama_model: str = "qwen3:8b"
+    ollama_model: str = "qwen2.5-coder:14b"
     ollama_think: bool | str | None = None
     ollama_timeout_seconds: float = 120.0
     ollama_tool_iterations: int = 8

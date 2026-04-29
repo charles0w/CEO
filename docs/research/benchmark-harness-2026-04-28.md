@@ -207,3 +207,20 @@ Observed result:
 Why this matters:
 - CEO can now separately evaluate full tool-capable local models and raw-chat local models
 - `gemma3:12b` should not be treated as a full CEO backend yet, but it remains useful for raw local chat testing
+
+## Iteration 8: shortlist defaults after Phi comparison
+
+The first Phi pass completed the initial local shortlist:
+- `phi4:14b` rejects Ollama tool schemas
+- `phi4:14b` matches Gemma's no-tools score on the quick profile
+- `phi4:14b` is faster than Gemma in no-tools mode on this machine
+- `qwen2.5-coder:14b` remains the only tested local model that completed the tool-enabled quick profile successfully
+
+Changes made after that result:
+- default Ollama model examples now use `qwen2.5-coder:14b`
+- `backend/benchmarks/targets.research-shortlist.example.json` now treats `qwen2.5-coder:14b` as the tool-enabled baseline
+- the same target file marks both `phi4:14b` and `gemma3:12b` as no-tools benchmark targets
+
+Why this matters:
+- the default local path should optimize for a working CEO assistant before optimizing for raw model preference
+- raw-chat models remain useful, but they need explicit no-tools routing until CEO has capability-aware provider selection

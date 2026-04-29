@@ -41,7 +41,7 @@ This creates a virtual environment, installs dependencies, and starts the server
 
 > **First run:** Whisper downloads the `base` STT model (~145 MB) automatically.
 >
-> **If using Ollama:** pull a model first, for example `ollama pull qwen3:8b`.
+> **If using Ollama:** pull a model first, for example `ollama pull qwen2.5-coder:14b`.
 
 ### 2. Mobile / Web App
 
@@ -85,7 +85,7 @@ LLM_PROVIDER=gemini                  # gemini | ollama
 GEMINI_API_KEY=your_key_here         # required only for Gemini
 GEMINI_MODEL=gemini-2.0-flash
 OLLAMA_BASE_URL=http://localhost:11434/api
-OLLAMA_MODEL=qwen3:8b
+OLLAMA_MODEL=qwen2.5-coder:14b
 OLLAMA_THINK=
 OLLAMA_TOOLS_ENABLED=true
 GITHUB_TOKEN=                          # optional — for GitHub integration
@@ -109,7 +109,7 @@ Config-variant example:
 
 ```bash
 cd backend
-python -m benchmarks.run_llm_bench --provider ollama --model qwen3:8b --profile quick --timeout 180 --think false
+python -m benchmarks.run_llm_bench --provider ollama --model qwen2.5-coder:14b --profile quick --timeout 180 --think false
 ```
 
 No-tools example for Ollama models that reject tool schemas:

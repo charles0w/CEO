@@ -1,7 +1,7 @@
 # CEO local benchmark results
 
 Date: 2026-04-28
-Status: first three-model quick-profile comparison captured; Gemma raw-chat rerun captured
+Status: first four-model quick-profile comparison captured; Phi selected as first raw-chat fallback
 
 ## Scope of this pass
 
@@ -11,6 +11,7 @@ This pass started with the only model that was already installed locally:
 It now also includes comparison runs against:
 - `qwen3:8b`
 - `gemma3:12b`
+- `phi4:14b`
 
 The broader target comparison set is:
 - `qwen3:8b`
@@ -20,7 +21,7 @@ The broader target comparison set is:
 At the time of this note:
 - `qwen3:8b` has now been benchmarked
 - `gemma3:12b` has now been installed and benchmarked through both the tool-enabled and no-tools Ollama paths
-- `phi4:14b` is still pending
+- `phi4:14b` has now been installed and benchmarked through both the tool-enabled and no-tools Ollama paths
 
 ## qwen2.5-coder quick-profile command
 
@@ -255,14 +256,108 @@ What Gemma did poorly in no-tools mode:
 - was much slower than `qwen2.5-coder:14b` on the comparable quick profile
 - cannot call CEO tools in this mode, so it is a raw-chat fallback candidate rather than a full assistant backend
 
+## phi4:14b installation and disk note
+
+`phi4:14b` was not installed at the start of this pass.
+The first pull failed because the machine had only about `325 MB` free on `/System/Volumes/Data`.
+
+To make room:
+- removed local `qwen3:8b`
+- removed local `gemma3:12b`
+- kept local `qwen2.5-coder:14b`, because it is still the best full tool-enabled local baseline
+
+After cleanup:
+- free disk increased to about `13 GB`
+- `phi4:14b` pulled successfully
+- `ollama list` showed `phi4:14b` and `qwen2.5-coder:14b` installed
+
+The removed models are still represented by saved benchmark artifacts and can be pulled again later.
+
+## phi4:14b tool-enabled compatibility run
+
+Command used:
+
+```bash
+cd backend
+python3 -m benchmarks.run_llm_bench \
+  --provider ollama \
+  --model phi4:14b \
+  --profile quick \
+  --output-dir ../output/benchmarks
+```
+
+Artifacts:
+
+- `output/benchmarks/20260429T034755+0000_ollama-phi4-14b.json`
+- `output/benchmarks/20260429T034755+0000_ollama-phi4-14b.md`
+
+Aggregate result:
+- average score: `0.167`
+- average latency: `71.6 ms`
+
+Observed Ollama error:
+
+```text
+{"error":"registry.ollama.ai/library/phi4:14b does not support tools"}
+```
+
+Interpretation:
+- `phi4:14b` has the same tool-schema limitation as `gemma3:12b`
+- it cannot be used as a full CEO local backend unless tools are disabled or routed elsewhere
+- the non-zero score is a heuristic artifact from the error text, not real model quality
+
+## phi4:14b no-tools raw-chat quick-profile run
+
+Command used:
+
+```bash
+cd backend
+python3 -m benchmarks.run_llm_bench \
+  --provider ollama \
+  --model phi4:14b \
+  --profile quick \
+  --tools false \
+  --output-dir ../output/benchmarks
+```
+
+Artifacts:
+
+- `output/benchmarks/20260429T034810+0000_ollama-phi4-14b-tools-false.json`
+- `output/benchmarks/20260429T034810+0000_ollama-phi4-14b-tools-false.md`
+
+Aggregate result:
+- average score: `0.667`
+- average latency: `43411.0 ms`
+
+Case breakdown:
+- `git_safety_protocol`: score `1.0`, latency `47457.4 ms`
+- `structured_rollout_json`: score `0.0`, latency `51989.5 ms`
+- `local_model_selection`: score `1.0`, latency `30786.2 ms`
+
+Telemetry observations:
+- all three cases completed in a single raw-chat round with `tool_call_count=0`
+- the structured JSON case generated `411` eval tokens and took about `52s`
+- `phi4:14b` was faster than `gemma3:12b` in no-tools mode on the same quick profile
+
+What Phi did well in no-tools mode:
+- followed the git safety protocol and named `get_git_status_and_diff()`
+- produced a clear `Default first pick:` answer for local model selection
+- matched Gemma's no-tools score while running faster overall
+
+What Phi did poorly in no-tools mode:
+- failed strict JSON output by returning fenced, verbose, partially off-target JSON-style content
+- cannot call CEO tools in this mode
+- is still much slower than `qwen2.5-coder:14b` on the comparable quick profile
+
 Current local-provider ranking from this pass:
 - `qwen2.5-coder:14b` is still the best current full-CEO local default candidate because it handles the tool-enabled path and is much faster than the alternatives tested so far
-- `gemma3:12b` is the best current no-tools/raw-chat candidate because it passes two of three quick-profile cases once tools are disabled
+- `phi4:14b` is the best current no-tools/raw-chat candidate because it matches Gemma's score and is faster on this quick profile
+- `gemma3:12b` remains a viable no-tools/raw-chat candidate, but Phi is the better first raw-chat fallback so far
 - `qwen3:8b` is not a good first default on this machine/config because it matched `qwen2.5-coder:14b` on score but was much slower and timed out on one quick-profile case
 
 ## Immediate next action
 
-1. Benchmark `phi4:14b` with the same quick profile if it can be installed locally.
-2. Compare `phi4:14b` against `qwen2.5-coder:14b` for tool-enabled use if supported.
-3. If `phi4:14b` rejects tools, rerun it with `--tools false` and classify it as a raw-chat candidate.
-4. Consider a stricter structured-output prompt or parser cleanup only after the first model shortlist is complete.
+1. Treat `qwen2.5-coder:14b` as the current Ollama default for full CEO tool-enabled testing.
+2. Treat `phi4:14b` as the current first no-tools/raw-chat fallback.
+3. Add an automatic Ollama model capability map so known non-tool models do not require manually passing `--tools false`.
+4. Consider a stricter structured-output prompt or parser cleanup only after capability routing is in place.

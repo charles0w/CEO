@@ -1,18 +1,19 @@
 [
   {
     "provider": "ollama",
-    "model": "qwen3:8b",
-    "label": "fast-baseline"
-  },
-  {
-    "provider": "ollama",
-    "model": "gemma3:12b",
-    "label": "general-local-no-tools",
-    "tools": false
+    "model": "qwen2.5-coder:14b",
+    "label": "tool-enabled-baseline"
   },
   {
     "provider": "ollama",
     "model": "phi4:14b",
-    "label": "lightweight-reasoning"
+    "label": "raw-chat-reasoning-no-tools",
+    "tools": false
+  },
+  {
+    "provider": "ollama",
+    "model": "gemma3:12b",
+    "label": "raw-chat-general-no-tools",
+    "tools": false
   }
 ]
