@@ -235,6 +235,16 @@ Changes made in this iteration:
 - the first no-tool families are `gemma3:*` and `phi4:*`
 - benchmarks can still force `--tools true` when intentionally probing compatibility
 
+Validation:
+- `python3 -m py_compile backend/config.py backend/services/llm_service.py backend/services/ollama_service.py backend/benchmarks/run_llm_bench.py`
+- `cd backend && python3 -m benchmarks.run_llm_bench --provider mock --profile quick --tools true --output-dir /tmp/ceo-bench-tools-true`
+- `cd backend && python3 -m benchmarks.run_llm_bench --provider ollama --model phi4:14b --case local_model_selection --output-dir /tmp/ceo-phi-auto-route-check`
+
+Observed validation result:
+- `phi4:14b` ran without passing `--tools false`
+- the run avoided the previous Ollama `400 Bad Request` tool-schema error
+- the `local_model_selection` case scored `1.0`
+
 Why this matters:
 - selecting `phi4:14b` or `gemma3:12b` no longer fails immediately just because the global tool setting was left enabled
 - `qwen2.5-coder:14b` still keeps tools enabled by default
