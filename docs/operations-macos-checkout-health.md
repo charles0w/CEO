@@ -32,3 +32,13 @@ After repair:
 ## Practical recommendation
 
 For long-running local development, keep the active repo outside iCloud-managed Desktop/Documents if possible, for example under `~/dev/CEO`. If keeping it on Desktop, expect to occasionally rehydrate files before running Git, npm, or TypeScript checks.
+
+## Current stable clone
+
+A persistent non-Desktop clone was created at:
+
+```text
+/Users/newuser/dev/CEO
+```
+
+Use that path for future validation and commits if the Desktop checkout starts returning `compressed,dataless`, `short read`, or empty JSON-file errors again.
