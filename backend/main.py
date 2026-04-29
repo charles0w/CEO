@@ -47,9 +47,8 @@ class ConnectionManager:
         log.info(f"Client connected ({len(self.connections)} active)")
 
     def disconnect(self, ws: WebSocket):
-        self.connections.discard(ws) if hasattr(self.connections, 'discard') else (
-            self.connections.remove(ws) if ws in self.connections else None
-        )
+        if ws in self.connections:
+            self.connections.remove(ws)
         log.info(f"Client disconnected ({len(self.connections)} active)")
 
     async def send(self, ws: WebSocket, data: dict):

@@ -47,6 +47,17 @@ In the app's Settings screen, set the server URL to `ws://<desktop-lan-ip>:8000/
 
 For remote access outside the home network: run `ngrok http 8000` on the Desktop and use the `wss://` URL from ngrok.
 
+## Validation
+
+Prefer the stable non-iCloud checkout at `/Users/newuser/dev/CEO` for Git, npm, and validation work. The Desktop checkout can be converted into macOS `compressed,dataless` placeholders by iCloud.
+
+```bash
+cd /Users/newuser/dev/CEO
+./scripts/validate.sh
+```
+
+`scripts/validate.sh` runs backend compile checks, structured-output parser smoke tests, mobile production audit, TypeScript, Expo dependency/config checks, Expo Doctor, and web export. The current accepted Expo Doctor warning is `expo-av` being marked unmaintained; treat migration to `expo-audio` as a deliberate larger change.
+
 ## Architecture
 
 ```text

@@ -375,3 +375,27 @@ Validation after this iteration:
 Remaining practical validation:
 - run the physical Expo Go test from Charles's phone while it is on the same network
 - decide whether to keep `expo-av` for the current Expo SDK 52 app or plan a larger SDK/audio-stack migration to `expo-audio` later
+
+## Iteration 15: repeatable validation and reconnect hardening
+
+After the mobile dependency pass, the next practical improvement was to make the validation process repeatable and reduce runtime edge cases in the app itself.
+
+Changes made in this iteration:
+- added `scripts/validate.sh` as the repo-level validation entrypoint
+- added mobile npm scripts for TypeScript, production audit, Expo Doctor, and web export
+- documented the validation workflow in `README.md`, `AGENTS.md`, and `CLAUDE.md`
+- simplified backend `ConnectionManager.disconnect()` to use direct list removal instead of a list/set fallback expression
+- rewrote the mobile WebSocket hook lifecycle so URL changes and unmounts cancel stale retry timers and ignore stale socket events
+
+Validation:
+- `./scripts/validate.sh`
+
+Observed validation result:
+- backend Python compile checks passed
+- structured-output parser smoke test passed
+- `npm audit --omit=dev --audit-level=moderate` reported `found 0 vulnerabilities`
+- `npx tsc --noEmit --pretty false` passed
+- `npx expo install --check` reported dependencies are up to date
+- `npx expo config --json` resolved successfully
+- `npx expo-doctor` still reports only the known `expo-av` maintenance warning
+- `npx expo export --platform web --output-dir /tmp/ceo-expo-web-export` succeeded

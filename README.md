@@ -150,6 +150,19 @@ For Ollama, `/health` also reports the resolved tool mode, including `ollama_too
 
 ---
 
+## Validation
+
+Use the stable non-iCloud checkout for validation:
+
+```bash
+cd /Users/newuser/dev/CEO
+./scripts/validate.sh
+```
+
+The script runs backend Python compile checks, the structured-output parser smoke test, production npm audit, mobile TypeScript, Expo dependency/config checks, Expo Doctor, and a web export. Expo Doctor currently has one accepted warning: `expo-av` is marked unmaintained by React Native Directory, but it remains the SDK 52 audio package used by the app today.
+
+---
+
 ## Architecture
 
 ```
