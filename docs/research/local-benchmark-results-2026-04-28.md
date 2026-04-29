@@ -362,5 +362,4 @@ Current local-provider ranking from this pass:
 3. Run the physical-device Expo Go test from Charles's phone on the same network.
 4. Add more raw-chat-only families to the automatic Ollama capability map as they are discovered.
 5. Use the shared structured-output repair helper in future workflows that need machine-readable JSON.
-6. Rerun full `npx tsc --noEmit` after the local Node/npm stall is resolved.
-7. Plan an Expo dependency remediation pass before production mobile distribution; the current audit fix path is breaking.
+6. Decide whether to keep `expo-av` for the current Expo SDK 52 app or schedule a larger migration to `expo-audio`.

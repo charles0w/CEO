@@ -346,3 +346,32 @@ Remaining practical validation:
 - run the same URL from the physical Expo Go app on Charles's phone while it is on the same network
 - rerun full `npx tsc --noEmit` after the local Node/npm stall is resolved
 - plan an Expo dependency upgrade/remediation pass before production distribution
+
+## Iteration 14: mobile dependency health and iCloud checkout repair
+
+The next practical blocker was the mobile validation stall and Expo dependency health.
+
+Work completed in this iteration:
+- diagnosed the full `npx tsc --noEmit` stall as a macOS Desktop/iCloud `compressed,dataless` placeholder problem affecting both tracked repo files and `mobile/node_modules`
+- repaired the local checkout by cloning a fresh copy of `charles0w/CEO` to `/tmp/CEO-fresh`, restoring the Desktop checkout to the already-pushed `cbda28d` state, and then materializing tracked files by writing their bytes from the fresh clone
+- removed and reinstalled `mobile/node_modules` with `npm ci --legacy-peer-deps --no-audit`
+- confirmed full mobile TypeScript now completes with `npx tsc --noEmit --pretty false`
+- ran `npx expo-doctor` and fixed the actionable SDK/config findings
+- added `mobile/assets/icon.png` so `app.json` points at a real icon asset
+- installed the SDK-compatible direct dependency `expo-font`
+- aligned `@expo/vector-icons` to `~14.0.4`, the Expo SDK 52 expected version
+- aligned `@react-native-async-storage/async-storage` to `1.23.1`, the Expo SDK 52 expected version
+- added npm `overrides` for vulnerable transitive packages: `@xmldom/xmldom`, `postcss`, `tar`, and `uuid`
+
+Validation after this iteration:
+- `npm audit --omit=dev --audit-level=moderate` reports `found 0 vulnerabilities`
+- `npx tsc --noEmit --pretty false` passes
+- `npx expo install --check` reports dependencies are up to date
+- `npx expo config --json` resolves the app config and icon path
+- `npx expo export --platform web --output-dir /tmp/ceo-expo-web-export` succeeds
+- `npx expo-doctor` now passes 16/17 checks; the only remaining warning is that `expo-av` is unmaintained according to React Native Directory metadata
+- backend `py_compile` still passes after checkout repair
+
+Remaining practical validation:
+- run the physical Expo Go test from Charles's phone while it is on the same network
+- decide whether to keep `expo-av` for the current Expo SDK 52 app or plan a larger SDK/audio-stack migration to `expo-audio` later

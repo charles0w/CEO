@@ -97,10 +97,14 @@ Completed:
 - fixed the mobile TypeScript issue caused by an invalid `TextInput` `color` prop
 - validated the LAN `/health` and WebSocket path at `ws://10.0.16.70:8000/ws`
 - added a configurable `TTS_TIMEOUT_SECONDS` guard so Edge TTS cannot hang a backend response indefinitely
+- repaired the macOS Desktop/iCloud dataless checkout issue and documented the recovery path
+- reinstalled mobile dependencies cleanly with `npm ci --legacy-peer-deps --no-audit`
+- confirmed full `npx tsc --noEmit --pretty false` now passes
+- fixed Expo Doctor actionable findings by adding a real app icon, adding `expo-font`, and aligning SDK 52 package versions
+- reduced `npm audit --omit=dev --audit-level=moderate` from 17 findings to 0 with targeted npm overrides
 
 Remaining:
 1. Run the physical-device Expo Go test from Charles's phone on the same network.
 2. Add more raw-chat-only families to the automatic capability map when discovered.
 3. Use the structured-output repair helper in future app workflows that need machine-readable JSON.
-4. Rerun full `npx tsc --noEmit` after the local Node/npm stall is resolved; touched screen transpile checks pass, but the latest full project run timed out without diagnostics.
-5. Plan an Expo dependency remediation pass before production mobile distribution; `npm audit --omit=dev` reports 17 vulnerabilities, and the automatic force fix would make a breaking Expo version change.
+4. Decide whether to keep `expo-av` for the current Expo SDK 52 app or schedule a larger migration to `expo-audio`.

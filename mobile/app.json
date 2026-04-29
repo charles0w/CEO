@@ -19,8 +19,13 @@
       "adaptiveIcon": {
         "backgroundColor": "#050510"
       },
-      "permissions": ["RECORD_AUDIO"]
+      "permissions": [
+        "RECORD_AUDIO"
+      ]
     },
-    "plugins": ["expo-av"]
+    "plugins": [
+      "expo-av",
+      "expo-font"
+    ]
   }
 }
