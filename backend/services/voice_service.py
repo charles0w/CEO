@@ -29,7 +29,10 @@ class VoiceService:
         with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
             tmp = f.name
         try:
-            await edge_tts.Communicate(text, settings.tts_voice).save(tmp)
+            await asyncio.wait_for(
+                edge_tts.Communicate(text, settings.tts_voice).save(tmp),
+                timeout=settings.tts_timeout_seconds,
+            )
             with open(tmp, "rb") as f:
                 return f.read()
         finally:

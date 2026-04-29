@@ -171,7 +171,6 @@ export function ChatScreen({ serverUrl, onOpenSettings }: Props) {
             onChangeText={setInputText}
             placeholder="Command CEO..."
             placeholderTextColor="#334455"
-            color="#e0e8f8"
             onSubmitEditing={sendText}
             returnKeyType="send"
             multiline

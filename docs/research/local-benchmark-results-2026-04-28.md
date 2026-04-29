@@ -359,7 +359,8 @@ Current local-provider ranking from this pass:
 
 1. Treat `qwen2.5-coder:14b` as the current Ollama default for full CEO tool-enabled testing.
 2. Treat `phi4:14b` as the current first no-tools/raw-chat fallback.
-3. Test real voice/TTS dependencies after installing the full backend requirements.
-4. Test the mobile app against the LAN WebSocket URL.
-5. Add more raw-chat-only families to the automatic Ollama capability map as they are discovered.
-6. Decide whether CEO should add JSON fence-stripping for structured-output workflows.
+3. Run the physical-device Expo Go test from Charles's phone on the same network.
+4. Add more raw-chat-only families to the automatic Ollama capability map as they are discovered.
+5. Use the shared structured-output repair helper in future workflows that need machine-readable JSON.
+6. Rerun full `npx tsc --noEmit` after the local Node/npm stall is resolved.
+7. Plan an Expo dependency remediation pass before production mobile distribution; the current audit fix path is breaking.

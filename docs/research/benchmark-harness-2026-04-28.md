@@ -300,3 +300,49 @@ Observed validation result:
 Why this matters:
 - future structured-output runs should separate model JSON weakness from ambiguity in the prompt
 - the benchmark still scores strict parseability instead of forgiving fenced JSON
+
+## Iteration 12: shared structured-output repair helper
+
+After Phi repeatedly returned valid JSON inside markdown fences, CEO needed a reusable repair path for future structured-output workflows.
+
+Changes made in this iteration:
+- added `backend/services/structured_output.py`
+- added `extract_json_object_text()` for markdown-fenced or prose-wrapped JSON object extraction
+- added `parse_json_object()` for strict parse first, optional repaired parse second, and required-key validation
+- benchmark JSON diagnostics now use the shared helper for `repairable` detection while keeping strict scoring unchanged
+
+Why this matters:
+- app workflows can choose to accept repairable JSON without weakening the benchmark's strict score
+- future structured-output code has one shared parser instead of ad hoc fence stripping
+
+## Iteration 13: full runtime, mobile, and repo-health validation
+
+After disk space was freed, the next practical step was to validate the real runtime path instead of only benchmark stubs.
+
+Work completed in this iteration:
+- refreshed Git metadata and rehydrated tracked macOS `dataless` placeholders from `HEAD` so status, diffs, and tests could read the repo normally
+- installed full backend requirements into a Python 3.11 virtual environment after the previous Python 3.13 environment hit a NumPy/faster-whisper import problem
+- installed `ffmpeg` with Homebrew for faster-whisper audio decoding
+- validated Edge TTS synthesis with real network-backed `edge-tts`
+- validated a full voice round trip: Edge TTS generated audio and faster-whisper transcribed it back successfully
+- installed mobile dependencies with `npm install --legacy-peer-deps`
+- ran `npx tsc --noEmit`, found an invalid React Native `TextInput` `color` prop, removed it, and confirmed TypeScript passes
+- started the FastAPI backend on `0.0.0.0:8000` using `LLM_PROVIDER=ollama`, `OLLAMA_MODEL=qwen2.5-coder:14b`, and `OLLAMA_TOOLS_ENABLED=auto`
+- validated LAN `/health` at `http://10.0.16.70:8000/health`
+- validated the mobile WebSocket path programmatically at `ws://10.0.16.70:8000/ws`, including greeting, model response, and returned TTS audio
+- updated app and README IP instructions to include both Windows and macOS
+- updated `AGENTS.md` and `CLAUDE.md` so future coding-agent sessions see the provider-selectable Gemini/Ollama architecture and current local-first defaults
+- added `TTS_TIMEOUT_SECONDS` so external Edge TTS calls cannot hang a backend response indefinitely
+
+Observed validation results:
+- `/health` reported `llm_provider=ollama`, `llm_model=qwen2.5-coder:14b`, and `ollama_tools_mode=auto-enabled`
+- LAN WebSocket smoke returned `LAN mobile smoke ok` through the backend and produced response audio
+- voice smoke returned the transcription `CEO Voice Smoke Test`
+- mobile TypeScript now passes after removing the invalid prop
+- after the later Settings screen IP-instruction edit, full project `tsc` reruns stalled under 60s/120s guards with no diagnostic output; direct TypeScript transpile checks for the touched `ChatScreen.tsx` and `SettingsScreen.tsx` files passed
+- `npm audit --omit=dev` reported 17 vulnerabilities: 5 moderate and 12 high. The main affected transitive packages are `@xmldom/xmldom`, `postcss`, `tar`, and `uuid` through Expo CLI/config dependencies. No automatic fix was applied because npm proposes `npm audit fix --force`, which would install `expo@49.0.23` as a breaking change from the current Expo 52 stack
+
+Remaining practical validation:
+- run the same URL from the physical Expo Go app on Charles's phone while it is on the same network
+- rerun full `npx tsc --noEmit` after the local Node/npm stall is resolved
+- plan an Expo dependency upgrade/remediation pass before production distribution

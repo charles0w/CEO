@@ -1,10 +1,16 @@
 from dataclasses import dataclass, field
 import json
 from pathlib import Path
+import sys
 from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+BACKEND_ROOT = REPO_ROOT / "backend"
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
+
+from services.structured_output import parse_json_object
 
 
 def _excerpt(path: str, start: int, end: int) -> str:
@@ -36,24 +42,6 @@ def _markdown_section(path: str, heading: str) -> str:
             end = idx
             break
     return "\n".join(lines[start:end])
-
-
-def _extract_repairable_json(text: str) -> str | None:
-    stripped = text.strip()
-    if stripped.startswith("```"):
-        lines = stripped.splitlines()
-        if lines and lines[0].strip().startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-        candidate = "\n".join(lines).strip()
-        return candidate or None
-
-    start = stripped.find("{")
-    end = stripped.rfind("}")
-    if start != -1 and end > start:
-        return stripped[start : end + 1]
-    return None
 
 
 @dataclass
@@ -106,18 +94,9 @@ class BenchmarkCase:
                 else:
                     checks.append(False)
             except json.JSONDecodeError:
-                candidate = _extract_repairable_json(response)
-                if candidate:
-                    try:
-                        repaired = json.loads(candidate)
-                        if isinstance(repaired, dict):
-                            repair_missing = [
-                                key for key in self.json_required_keys if key not in repaired
-                            ]
-                            json_result["repairable"] = not repair_missing
-                            json_result["repair_missing_keys"] = repair_missing
-                    except json.JSONDecodeError:
-                        pass
+                repair_result = parse_json_object(response, self.json_required_keys)
+                json_result["repairable"] = repair_result.valid and repair_result.repaired
+                json_result["repair_missing_keys"] = repair_result.missing_keys
                 checks.append(False)
             details["json"] = json_result
 

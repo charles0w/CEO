@@ -10,8 +10,12 @@ CEO is a Jarvis-style personal AI assistant that runs locally on your Desktop. T
 - **Node.js 18+** — for the mobile/web app
 - **ffmpeg** — required by the voice transcription engine
 
-```
+```bash
+# Windows
 winget install ffmpeg
+
+# macOS
+brew install ffmpeg
 ```
 
 - **Gemini API key** — required only when `LLM_PROVIDER=gemini`
@@ -25,16 +29,26 @@ winget install ffmpeg
 
 ```bash
 cd backend
-copy .env.example .env
+# Windows: copy .env.example .env
+# macOS/Linux: cp .env.example .env
 # Edit .env and choose a provider:
 # - Gemini: set LLM_PROVIDER=gemini and fill in GEMINI_API_KEY
 # - Ollama: set LLM_PROVIDER=ollama and make sure Ollama is running locally
 ```
 
-Then start the server (double-click or run in terminal):
+Then start the server.
 
 ```batch
 start.bat
+```
+
+On macOS/Linux:
+
+```bash
+python3.11 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 This creates a virtual environment, installs dependencies, and starts the server at `http://0.0.0.0:8000`.
@@ -61,7 +75,9 @@ In the app, tap the **settings icon** (top right) and set the server URL:
 | Same network (home/office) | `ws://<desktop-ip>:8000/ws` |
 | Remote (outside network) | `wss://xxxx.ngrok-free.app/ws` |
 
-To find your Desktop IP: open Command Prompt → run `ipconfig` → look for **IPv4 Address** under your WiFi adapter.
+To find your Desktop IP:
+- Windows: run `ipconfig` and look for **IPv4 Address** under your WiFi adapter.
+- macOS: run `ipconfig getifaddr en0`.
 
 For remote access: install [ngrok](https://ngrok.com) and run `ngrok http 8000` on your Desktop.
 
@@ -92,6 +108,7 @@ GITHUB_TOKEN=                          # optional — for GitHub integration
 OBSIDIAN_VAULT_PATH=C:/Users/charl/Desktop/obi-secondbrain
 WHISPER_MODEL=base                     # tiny | base | small
 TTS_VOICE=en-US-GuyNeural
+TTS_TIMEOUT_SECONDS=30
 ```
 
 ## Benchmarking local models
@@ -146,6 +163,7 @@ CEO/
 │       ├── llm_tools.py           # Shared system prompt + tool registry
 │       ├── gemini_service.py      # Gemini backend
 │       ├── ollama_service.py      # Ollama backend + tool loop
+│       ├── structured_output.py   # JSON object extraction/repair helper
 │       ├── voice_service.py       # faster-whisper (STT) + edge-tts (TTS)
 │       ├── obsidian_service.py    # Obsidian vault read/write/search
 │       ├── github_service.py      # GitHub API via PyGithub

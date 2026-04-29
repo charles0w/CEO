@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     obsidian_vault_path: str = "C:/Users/charl/Desktop/obi-secondbrain"
     whisper_model: str = "base"
     tts_voice: str = "en-US-GuyNeural"
+    tts_timeout_seconds: float = 30.0
     host: str = "0.0.0.0"
     port: int = 8000
 

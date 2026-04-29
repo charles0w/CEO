@@ -64,9 +64,8 @@ export function SettingsScreen({ onBack, onSave, currentUrl }: Props) {
         <View style={styles.section}>
           <Text style={styles.label}>How to find your Desktop IP</Text>
           <Text style={styles.hint}>
-            On your Desktop, open Command Prompt and run:{'\n'}
-            <Text style={styles.code}>ipconfig</Text>{'\n'}
-            Look for "IPv4 Address" under your WiFi adapter.{'\n\n'}
+            Windows: run <Text style={styles.code}>ipconfig</Text> and look for "IPv4 Address" under your WiFi adapter.{'\n\n'}
+            macOS: run <Text style={styles.code}>ipconfig getifaddr en0</Text>.{'\n\n'}
             For remote access from outside your network,{'\n'}
             install ngrok and run: <Text style={styles.code}>ngrok http 8000</Text>
           </Text>

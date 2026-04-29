@@ -89,9 +89,18 @@ Completed:
 - confirmed `/health` reports `qwen2.5-coder:14b` as `auto-enabled`
 - confirmed `/health` reports `phi4:14b` as `auto-disabled`
 - re-ran the structured-output case after the stricter JSON prompt change
+- added a shared structured-output repair helper for fenced or prose-wrapped JSON objects
+- installed the full backend runtime in a Python 3.11 virtual environment after the Python 3.13 environment hit a NumPy/faster-whisper import issue
+- installed `ffmpeg` with Homebrew and confirmed it is available for faster-whisper
+- validated real Edge TTS synthesis and a faster-whisper transcription round trip
+- installed mobile dependencies with `npm install --legacy-peer-deps`
+- fixed the mobile TypeScript issue caused by an invalid `TextInput` `color` prop
+- validated the LAN `/health` and WebSocket path at `ws://10.0.16.70:8000/ws`
+- added a configurable `TTS_TIMEOUT_SECONDS` guard so Edge TTS cannot hang a backend response indefinitely
 
 Remaining:
-1. Test real voice/TTS dependencies after installing the full backend requirements.
-2. Test the mobile app against the LAN WebSocket URL.
-3. Add more raw-chat-only families to the automatic capability map when discovered.
-4. Decide whether CEO should add JSON fence-stripping for structured-output workflows, since Phi produces repairable fenced JSON.
+1. Run the physical-device Expo Go test from Charles's phone on the same network.
+2. Add more raw-chat-only families to the automatic capability map when discovered.
+3. Use the structured-output repair helper in future app workflows that need machine-readable JSON.
+4. Rerun full `npx tsc --noEmit` after the local Node/npm stall is resolved; touched screen transpile checks pass, but the latest full project run timed out without diagnostics.
+5. Plan an Expo dependency remediation pass before production mobile distribution; `npm audit --omit=dev` reports 17 vulnerabilities, and the automatic force fix would make a breaking Expo version change.
