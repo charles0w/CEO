@@ -102,9 +102,12 @@ Completed:
 - confirmed full `npx tsc --noEmit --pretty false` now passes
 - fixed Expo Doctor actionable findings by adding a real app icon, adding `expo-font`, and aligning SDK 52 package versions
 - reduced `npm audit --omit=dev --audit-level=moderate` from 17 findings to 0 with targeted npm overrides
+- upgraded the mobile app from Expo SDK 52 to SDK 54 with React 19.1 and React Native 0.81
+- switched the existing voice base64 read path to `expo-file-system/legacy` so the current recording flow remains compatible with SDK 54's new default file-system API
+- confirmed `./scripts/validate.sh` passes cleanly, including Expo Doctor, mobile TypeScript, production audit, and web export
 
 Remaining:
 1. Run the physical-device Expo Go test from Charles's phone on the same network.
 2. Add more raw-chat-only families to the automatic capability map when discovered.
 3. Use the structured-output repair helper in future app workflows that need machine-readable JSON.
-4. Decide whether to keep `expo-av` for the current Expo SDK 52 app or schedule a larger migration to `expo-audio`.
+4. Consider a future audio-stack migration only if Expo's roadmap or app requirements make it necessary.

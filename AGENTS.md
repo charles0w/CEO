@@ -56,7 +56,7 @@ cd /Users/newuser/dev/CEO
 ./scripts/validate.sh
 ```
 
-`scripts/validate.sh` runs backend compile checks, structured-output parser smoke tests, mobile production audit, TypeScript, Expo dependency/config checks, Expo Doctor, and web export. The current accepted Expo Doctor warning is `expo-av` being marked unmaintained; treat migration to `expo-audio` as a deliberate larger change.
+`scripts/validate.sh` runs backend compile checks, structured-output parser smoke tests, mobile production audit, TypeScript, Expo dependency/config checks, Expo Doctor, and web export. The mobile app is on Expo SDK 54 (`expo@54.x`), React 19.1, and React Native 0.81; Expo Doctor is expected to pass cleanly.
 
 ## Architecture
 

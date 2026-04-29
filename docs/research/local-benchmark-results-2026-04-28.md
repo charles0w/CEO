@@ -362,4 +362,4 @@ Current local-provider ranking from this pass:
 3. Run the physical-device Expo Go test from Charles's phone on the same network.
 4. Add more raw-chat-only families to the automatic Ollama capability map as they are discovered.
 5. Use the shared structured-output repair helper in future workflows that need machine-readable JSON.
-6. Decide whether to keep `expo-av` for the current Expo SDK 52 app or schedule a larger migration to `expo-audio`.
+6. Consider a future audio-stack migration only if Expo's roadmap or app requirements make it necessary.

@@ -159,7 +159,7 @@ cd /Users/newuser/dev/CEO
 ./scripts/validate.sh
 ```
 
-The script runs backend Python compile checks, the structured-output parser smoke test, production npm audit, mobile TypeScript, Expo dependency/config checks, Expo Doctor, and a web export. Expo Doctor currently has one accepted warning: `expo-av` is marked unmaintained by React Native Directory, but it remains the SDK 52 audio package used by the app today.
+The script runs backend Python compile checks, the structured-output parser smoke test, production npm audit, mobile TypeScript, Expo dependency/config checks, Expo Doctor, and a web export. The mobile app is on Expo SDK 54 (`expo@54.x`), React 19.1, and React Native 0.81; Expo Doctor is expected to pass cleanly.
 
 ---
 

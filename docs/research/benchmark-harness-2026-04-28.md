@@ -374,7 +374,7 @@ Validation after this iteration:
 
 Remaining practical validation:
 - run the physical Expo Go test from Charles's phone while it is on the same network
-- decide whether to keep `expo-av` for the current Expo SDK 52 app or plan a larger SDK/audio-stack migration to `expo-audio` later
+- the SDK/audio-stack decision was superseded by Iteration 16; keep any future audio-stack migration as a roadmap item only if Expo requirements or app behavior make it necessary
 
 ## Iteration 15: repeatable validation and reconnect hardening
 
@@ -397,5 +397,36 @@ Observed validation result:
 - `npx tsc --noEmit --pretty false` passed
 - `npx expo install --check` reported dependencies are up to date
 - `npx expo config --json` resolved successfully
-- `npx expo-doctor` still reports only the known `expo-av` maintenance warning
+- at this point in the history, `npx expo-doctor` still reported only the known `expo-av` maintenance warning; Iteration 16 later removed this expected-warning exception
 - `npx expo export --platform web --output-dir /tmp/ceo-expo-web-export` succeeded
+
+## Iteration 16: Expo SDK 54 upgrade
+
+The next practical upgrade was moving the mobile app from Expo SDK 52 to SDK 54 so the app can run on the current Expo Go / React Native stack instead of staying pinned to the older dependency set.
+
+Research references used:
+- Expo SDK upgrade guide: https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/
+- Expo SDK 54 release notes: https://expo.dev/changelog/sdk-54
+
+Changes made in this iteration:
+- upgraded `expo` from the SDK 52 line to the SDK 54 line (`expo@54.x`)
+- aligned SDK-managed dependencies with Expo SDK 54, including React 19.1, React Native 0.81.5, React Native Web 0.21, `expo-av` 16, `expo-file-system` 19, `expo-font` 14, `expo-linear-gradient` 15, `expo-status-bar` 3, and `@expo/vector-icons` 15
+- ran Expo's recommended dependency repair flow with `npx expo install --fix`; npm hit peer-resolution conflicts, so the lockfile was finalized with `npm install --legacy-peer-deps --no-audit`
+- updated `ChatScreen.tsx` to import the current recording base64 read path from `expo-file-system/legacy`, because SDK 54 exposes the new file-system API as the default package entrypoint while the old API remains available under the legacy subpath
+- simplified `scripts/validate.sh` so Expo Doctor must now pass cleanly instead of tolerating the old SDK 52 `expo-av` maintenance warning
+- updated `README.md`, `AGENTS.md`, and `CLAUDE.md` to describe SDK 54 as the current mobile stack
+
+Validation after this iteration:
+- `./scripts/validate.sh` passes end to end
+- backend Python compile checks pass
+- structured-output parser smoke test passes
+- `npm audit --omit=dev --audit-level=moderate` reports `found 0 vulnerabilities`
+- `npx tsc --noEmit --pretty false` passes
+- `npx expo install --check` reports dependencies are up to date
+- `npx expo config --json` resolves successfully
+- `npx expo-doctor` reports 17/17 checks passed
+- `npx expo export --platform web --output-dir /tmp/ceo-expo-web-export` succeeds
+
+Remaining practical validation:
+- run the physical-device Expo Go test from Charles's phone while it is on the same network
+- keep the future audio-stack migration as a roadmap item only if Expo requirements or app behavior make it necessary

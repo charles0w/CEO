@@ -61,21 +61,7 @@ log "checking mobile dependencies"
 log "running Expo Doctor"
 (
   cd "$ROOT/mobile"
-  set +e
-  npx expo-doctor >/tmp/ceo-expo-doctor.txt 2>&1
-  status=$?
-  set -e
-  if [[ $status -ne 0 ]]; then
-    if grep -q "Unmaintained: expo-av" /tmp/ceo-expo-doctor.txt && grep -q "1 check failed" /tmp/ceo-expo-doctor.txt; then
-      cat /tmp/ceo-expo-doctor.txt
-      printf '\n[validate] Expo Doctor has only the known expo-av maintenance warning.\n'
-    else
-      cat /tmp/ceo-expo-doctor.txt
-      exit "$status"
-    fi
-  else
-    cat /tmp/ceo-expo-doctor.txt
-  fi
+  npx expo-doctor
 )
 
 if [[ "${RUN_EXPO_WEB_EXPORT:-1}" != "0" ]]; then
